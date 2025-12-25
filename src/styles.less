@@ -1,1 +1,110 @@
-/* You can add global styles to this file, and also import other style files */
+body {
+	--bs-body-font-family: "Averia Sans Libre", sans-serif;
+}
+.bg-darkest {
+	background-color: #0D0630;
+	color: #FFF;
+}
+.bg-dark {
+	background-color: #18314F;
+	color: #FFF;
+}
+.bg-medium {
+	background-color: #384E77;
+	color: #FFF;
+}
+.bg-light {
+	background-color: #8BBEB2;
+	color: #0D0630;
+}
+.bg-lightest {
+	background-color: #E6F9AF;
+	color: #0D0630;
+}
+.navbar {
+	--bs-emphasis-color-rgb: #FFF;
+}
+.btn-primary, .btn-outline-primary {
+	--bs-btn-border-width: 3px;
+    --bs-btn-border-color: #0D0630;
+    --bs-btn-hover-border-color: #18314F;
+    --bs-btn-active-border-color: #18314F;
+    --bs-btn-disabled-border-color: #384E77;
+}
+.btn-primary {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: #0D0630;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #18314F;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #18314F;
+    --bs-btn-disabled-color: #fff;
+    --bs-btn-disabled-bg: #384E77;
+}
+.btn-outline-primary {
+	margin-bottom: 15px;
+    --bs-btn-color: #0D0630;
+    --bs-btn-bg: #fff;
+	box-shadow: 0 10px #0D0630;
+    --bs-btn-hover-color: #18314F;
+    --bs-btn-hover-bg: #fff;
+    --bs-btn-active-color: #18314F;
+    --bs-btn-active-bg: #fff;
+    --bs-btn-disabled-color: #384E77;
+    --bs-btn-disabled-bg: #fff;
+    &:hover {
+    	margin-bottom: 12px;
+    	margin-top: 3px;
+		box-shadow: 0 7px #18314F;
+    }
+    &.active {
+    	margin-bottom: 8px;
+    	margin-top: 7px;
+		box-shadow: 0 3px #18314F;
+    }
+    &.disabled {
+		box-shadow: 0 10px #384E77;
+    }
+}
+.btn-secondary, .btn-outline-secondary {
+	--bs-btn-border-width: 3px;
+    --bs-btn-border-color: #8BBEB2;
+    --bs-btn-hover-border-color: #384E77;
+    --bs-btn-active-border-color: #384E77;
+    --bs-btn-disabled-border-color: #384E77;
+}
+.btn-secondary {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: #8BBEB2;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #384E77;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #384E77;
+    --bs-btn-disabled-color: #fff;
+    --bs-btn-disabled-bg: #384E77;
+}
+.btn-outline-secondary {
+	margin-bottom: 15px;
+    --bs-btn-color: #8BBEB2;
+    --bs-btn-bg: #fff;
+	box-shadow: 0 10px #8BBEB2;
+    --bs-btn-hover-color: #384E77;
+    --bs-btn-hover-bg: #fff;
+    --bs-btn-active-color: #384E77;
+    --bs-btn-active-bg: #fff;
+    --bs-btn-disabled-color: #384E77;
+    --bs-btn-disabled-bg: #fff;
+    &:hover {
+    	margin-bottom: 12px;
+    	margin-top: 3px;
+		box-shadow: 0 7px #384E77;
+    }
+    &.active {
+    	margin-bottom: 8px;
+    	margin-top: 7px;
+		box-shadow: 0 3px #384E77;
+    }
+    &.disabled {
+		box-shadow: 0 10px #384E77;
+    }
+}

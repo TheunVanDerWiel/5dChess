@@ -31,6 +31,7 @@
             ],
             "styles": [
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
+              "src/assets/fontawesome-7.1.0/css/all.min.css",
               "src/styles.less"
             ],
             "polyfills": [
