@@ -1,0 +1,49 @@
+<main>
+	<div class="container">
+		<div class="text-center mb-5">
+			<h1>5D Chess</h1>
+			<h2>with multiverse time travel</h2>
+			<h3>browser edition made by Theun van der Wiel</h3>
+			<h4>Credits; <a href="https://store.steampowered.com/app/1349230/5D_Chess_With_Multiverse_Time_Travel/" target="_blank">Conor Petersen, Thunkspace, LLC</a></h4>
+		</div>
+		
+		@if (userKnown === true) {
+			<div class="row mb-5">
+				<div class="col-12 col-sm-6 d-grid">
+					<button type="button" class="btn btn-outline-primary btn-lg" [ngClass]="{ active: mode === MODE_NEW }" (click)="mode = MODE_NEW"><i class="fa-solid fa-rocket"></i> New game</button>
+				</div>
+				<div class="col-12 col-sm-6 d-grid">
+					<button type="button" class="btn btn-outline-primary btn-lg" [ngClass]="{ active: mode === MODE_JOIN }" (click)="mode = MODE_JOIN"><i class="fa-solid fa-door-open"></i> Join game</button>
+				</div>
+			</div>
+			
+			@if (mode === MODE_NEW) {
+				<div class="row">
+					@if (!!typeId) {
+						<div class="col-12 col-sm-6 col-md-4 col-lg-3 d-grid">
+							<button type="button" class="btn btn-outline-secondary btn-lg" (click)="typeId = undefined" title="Back"><i class="fa-solid fa-arrow-left"></i></button>
+						</div>
+					}
+					@for (type of GAME_TYPES; track type.id) {
+						@if (typeId == type.parent) {
+							<div class="col-12 col-sm-6 col-md-4 col-lg-3 d-grid">
+								<button type="button" class="btn btn-outline-primary btn-lg" (click)="start(type.id)">{{type.name}} <span [hidden]="!type.recommended"><i class="fa-solid fa-star text-warning"></i></span></button>
+							</div>
+						}
+					}
+				</div>
+			}
+			
+			@if (mode === MODE_JOIN) {
+				<div class="input-group">
+					<span class="input-group-text"><i class="fa-solid fa-chess"></i></span>
+					<input type="number" class="form-control" placeholder="Game ID" [(ngModel)]="gameId"/>
+					<button class="btn btn-primary btn-lg" type="button" (click)="join()"><span class="d-none d-sm-inline">Join </span><i class="fa-solid fa-play"></i></button>
+				</div>
+			}
+		}
+		@if (userKnown === false) {
+			<div class="alert alert-danger">The game cannot be loaded. Make sure you accept cookies for this website.</div>
+		}
+	</div>
+</main>
