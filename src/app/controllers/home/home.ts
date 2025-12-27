@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { UserService } from 'src/app/services/user-service';
 import { GameService } from 'src/app/services/game-service';
 import { Router } from '@angular/router';
+import { LocalStorageService } from 'src/app/services/local-storage-service';
 
 @Component({
 	selector: 'app-home',
@@ -74,11 +75,22 @@ export class Home implements OnInit {
 	];
 	
 	private router = inject(Router);
+	private localStorage = inject(LocalStorageService);
 	private userService = inject(UserService);
 	private gameService = inject(GameService);
 
 	ngOnInit(): void {
-		this.userKnown = true;
+		var userId = this.localStorage.getItem('userId');
+		if (userId === null) {
+			userId = '';
+			var characters = '0123456789abcdefghijklmnopqrstuvwxyz', charChoices = characters.length;
+			for (var i = 0; i < 64; i++) {
+				userId += characters.charAt(Math.floor(Math.random()*charChoices));
+			}
+			this.localStorage.setItem('userId', userId);
+			userId = this.localStorage.getItem('userId');
+		}
+		this.userKnown = userId !== null;
 	}
 	
 	public start(typeId: number) {

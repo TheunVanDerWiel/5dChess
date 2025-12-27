@@ -2,7 +2,8 @@ import { Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
-import { GameState } from 'src/app/types/GameState';
+import { GameState, Split, Board } from 'src/app/types/GameState';
+import { Piece } from 'src/app/types/Game';
 import { LocalStorageService } from 'src/app/services/local-storage-service';
 import { GameService } from 'src/app/services/game-service';
 import { BoardReference, Move } from 'src/app/types/Move';
@@ -44,6 +45,7 @@ export class Game implements OnInit, OnDestroy {
 			}
 			
 	        // Load game
+			this.state = new GameState([[null, new Split(1), new Board([])],[new Board([[Piece.white_rook,Piece.white_knight,Piece.white_bishop,Piece.white_queen,Piece.white_king,Piece.white_bishop,Piece.white_knight,Piece.white_rook],[Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn],[],[],[],[],[],[]]), new Board([]), new Board([])]])
 			this.subscriptions.add(this.gameService.getGame(this.gameId!, this.userId!).subscribe(game => {
 				this.state = game.StartingState;
 				game.Moves.forEach(m => this.updateState(m));
@@ -55,6 +57,29 @@ export class Game implements OnInit, OnDestroy {
     ngOnDestroy(): void {
         this.subscriptions.unsubscribe();
     }
+	
+	public castBoard(board: any): Board {
+		return board as Board;
+	}
+	
+	public getIcon(piece: Piece) {
+		var color = Piece.color(piece) == 0 ? 'fa-regular ' : 'fa-solid ';
+		switch (Piece.type(piece)) {
+			case Piece.white_pawn:
+				return color+'fa-chess-pawn';
+			case Piece.white_rook:
+				return color+'fa-chess-rook';
+			case Piece.white_knight:
+				return color+'fa-chess-knight';
+			case Piece.white_bishop:
+				return color+'fa-chess-bishop';
+			case Piece.white_queen:
+				return color+'fa-chess-queen';
+			case Piece.white_king:
+				return color+'fa-chess-king';
+		}
+		return "";
+	}
     
     public select(timeline: number, board: number, x: number, y: number) {
 		
