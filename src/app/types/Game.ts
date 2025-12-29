@@ -13,38 +13,38 @@ export enum GameStatus {
 }
 
 export enum Piece {
-	white_pawn = 0,
-	white_brawn = 6,
-	white_rook = 1,
-	white_unicorn = 7,
-	white_dragon = 8,
-	white_knight = 2,
-	white_bishop = 3,
-	white_king = 4,
-	white_common_king = 9,
-	white_queen = 5,
-	white_princess = 10,
-	white_royal_queen = 11,
-	black_pawn = 16,
-	black_brawn = 22,
-	black_rook = 17,
-	black_unicorn = 23,
-	black_dragon = 24,
-	black_knight = 18,
-	black_bishop = 19,
-	black_king = 20,
-	black_common_king = 25,
-	black_queen = 21,
-	black_princess = 26,
-	black_royal_queen = 27
+	black_pawn = 0,
+	white_pawn = 1,
+	black_rook = 2,
+	white_rook = 3,
+	black_knight = 4,
+	white_knight = 5,
+	black_bishop = 8,
+	white_bishop = 9,
+	black_queen = 16,
+	white_queen = 17,
+	black_king = 32,
+	white_king = 33,
+	black_brawn = 64,
+	white_brawn = 65,
+	black_unicorn = 128,
+	white_unicorn = 129,
+	black_dragon = 256,
+	white_dragon = 257,
+	black_princess = 512,
+	white_princess = 513,
+	black_royal_queen = 1024,
+	white_royal_queen = 1025,
+	black_common_king = 2048,
+	white_common_king = 2049
 }
 
 export namespace Piece {
 	export function color(piece: Piece): number {
-		return piece & 16;
+		return piece & 1;
 	}
 	
 	export function type(piece: Piece): Piece {
-		return piece & 15;
+		return (piece | 1) - 1;
 	}
 }

@@ -1,50 +1,67 @@
+<section class="fill">
 <header>
 	<nav class="navbar navbar-expand-lg bg-darkest text-light" aria-label="Menu">
 		<div class="container-fluid">
 			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" aria-label="Toggle menu" (click)="showMenu = !showMenu">
-				<i class="fa-solid fa-bars"></i>
+				<i class="fas fa-bars"></i>
 			</button>
 			<div class="collapse navbar-collapse" [ngClass]="{ show: showMenu }">
 				<ul class="navbar-nav me-auto mb-2 mb-lg-0">
-					<li class="nav-item"><span class="nav-link" title="Game ID"><i class="fa-solid fa-chess"></i> {{gameId}}</span></li>
+					<li class="nav-item"><span class="nav-link" title="Game ID"><i class="fas fa-chess"></i> {{gameId}}</span></li>
 					<li class="nav-item">
-						<a class="nav-link" routerLink="/" title="Exit"><i class="fa-solid fa-power-off"></i> Main menu</a>
+						<a class="nav-link" routerLink="/" title="Exit"><i class="fas fa-power-off"></i> Main menu</a>
 					</li>
 					<li class="nav-item">
-						<button type="button" class="nav-link" (click)="forfeit()" title="Forfeit"><i class="fa-regular fa-flag"></i> Forfeit</button>
+						<button type="button" class="nav-link" (click)="forfeit()" title="Forfeit"><i class="far fa-flag"></i> Forfeit</button>
 					</li>
 				</ul>
+			</div>
+			<div class="container-fluid">
+				<div class="d-flex">
+				<div class="nav-item">
+					<button type="button" class="nav-link" (click)="zoom -= 1" title="Zoom out" [disabled]="zoom == 1"><i class="fas fa-magnifying-glass-minus"></i></button>
+				</div>
+				<div class="nav-item">
+					<button type="button" class="nav-link" (click)="zoom += 1" title="Zoom in" [disabled]="zoom == 5"><i class="fas fa-magnifying-glass-plus"></i></button>
+				</div>
+				</div>
 			</div>
 		</div>
 	</nav>
 </header>
 
 <main>
+	<section class="content zoom-{{zoom}}">
 	@if (!!state) {
 		@for (timeline of state.TimeLines; track $index) {
 			<div class="timeline">
 				@for (board of timeline; track $index) {
-					<div class="board">
-						@if (board === null) {
-							<div></div>
-						} @else if (board.hasOwnProperty('Source')) {
-							<div class="split"></div>
-						} @else {
+					@if (board === null) {
+						<div class="empty"></div>
+					} @else if (board.hasOwnProperty('Source')) {
+						<div class="split"></div>
+					} @else {
+						<div class="board">
 							@for (row of castBoard(board).Squares; track $index) {
+								@let $parentIndex = $index;
 								<div class="">
 									@for (square of row; track $index) {
-										<div class="">
+										<div class="square">
 											@if (square !== null) {
-												<i [ngClass]="getIcon(square)"></i>
+												<i [ngClass]="getIcon(square, $index, $parentIndex)"></i>
+											} @else {
+												&nbsp;
 											}
 										</div>
 									}
 								</div>
 							}
-						}
-					</div>
+						</div>
+					}
 				}
 			</div>
 		}
 	}
+	</section>
 </main>
+</section>

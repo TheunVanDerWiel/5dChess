@@ -1,9 +1,76 @@
-.timeline {
-	overflow: visible;
+.fill {
+	display: flex;
+	flex-flow: column;
+	height: 100vh;
+	width: 100vw;
 }
+
+header {
+	flex: 0 1 auto;
+}
+
+main {
+	flex: 1 1 auto;
+	overflow: auto;
+	
+	.content {
+		margin: auto;
+
+		&.zoom-1, &.zoom-2, &.zoom-3, &.zoom-4, &.zoom-5 {
+			transform-origin: top left;
+		}
+		
+		&.zoom-1, &.zoom-2, &.zoom-3 {
+			.board:hover {
+				cursor: pointer;
+				border-color: #384E77;
+			}
+		}
+		
+		&.zoom-4, &.zoom-5 {
+			.square:hover {
+				cursor: pointer;
+				background-color: #384E77;
+			}
+		}
+		
+		&.zoom-1 {
+			transform: scale(0.5);
+		}
+
+		&.zoom-2 {
+			transform: scale(0.75);
+		}
+	
+		&.zoom-3 {
+			transform: scale(1);
+		}
+		
+		&.zoom-4 {
+			transform: scale(1.5);
+		}
+
+		&.zoom-5 {
+			transform: scale(2);
+		}
+	}
+}
+
 .board {
-	& > div > div {
+	display: inline-block;
+	background-color: #fff;
+	border: 5px solid #8BBEB2;
+	margin: 10px;
+	
+	&>div>div {
 		display: inline-block;
-		width: 16px;
+		width: 24px;
+		height: 24px;
+		text-align: center;
+	}
+	
+	&>div:nth-child(2n)>div:nth-child(2n+1), &>div:nth-child(2n+1)>div:nth-child(2n) {
+		background-color: #000;
+		color: #fff;
 	}
 }

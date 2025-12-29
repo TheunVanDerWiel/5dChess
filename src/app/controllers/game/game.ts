@@ -23,6 +23,7 @@ export class Game implements OnInit, OnDestroy {
 	public state: GameState | undefined;
 	public unconfirmedState: GameState | null = null;
 	public selectedSquare: BoardReference | null = null;
+	public zoom = 4;
 	
 	private subscriptions = new Subscription();
 	private userId: string | null = null;
@@ -43,9 +44,23 @@ export class Game implements OnInit, OnDestroy {
 			if (!this.gameId) {
 				this.router.navigateByUrl('/');
 			}
+
+			var board = new Board([
+				[Piece.white_rook,Piece.white_knight,Piece.white_bishop,Piece.white_queen,Piece.white_king,Piece.white_bishop,Piece.white_knight,Piece.white_rook],
+				[Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn],
+				[null,null,null,null,null,null,null,null],
+				[null,null,null,null,null,null,null,null],
+				[null,null,null,null,null,null,null,null],
+				[null,null,null,null,null,null,null,null],
+				[Piece.black_pawn,Piece.black_pawn,Piece.black_pawn,Piece.black_pawn,Piece.black_pawn,Piece.black_pawn,Piece.black_pawn,Piece.black_pawn],
+				[Piece.black_rook,Piece.black_knight,Piece.black_bishop,Piece.black_king,Piece.black_queen,Piece.black_bishop,Piece.black_knight,Piece.black_rook]
+			]);
+			this.state = new GameState([
+				[null, new Split(1), board],
+				[board, board, board]
+			]);
 			
 	        // Load game
-			this.state = new GameState([[null, new Split(1), new Board([])],[new Board([[Piece.white_rook,Piece.white_knight,Piece.white_bishop,Piece.white_queen,Piece.white_king,Piece.white_bishop,Piece.white_knight,Piece.white_rook],[Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn],[],[],[],[],[],[]]), new Board([]), new Board([])]])
 			this.subscriptions.add(this.gameService.getGame(this.gameId!, this.userId!).subscribe(game => {
 				this.state = game.StartingState;
 				game.Moves.forEach(m => this.updateState(m));
@@ -62,27 +77,41 @@ export class Game implements OnInit, OnDestroy {
 		return board as Board;
 	}
 	
-	public getIcon(piece: Piece) {
-		var color = Piece.color(piece) == 0 ? 'fa-regular ' : 'fa-solid ';
+	public getIcon(piece: Piece, x: number, y: number) {
+		var color = Piece.color(piece) == (x+y)%2 ? 'far ' : 'fas ';
 		switch (Piece.type(piece)) {
-			case Piece.white_pawn:
+			case Piece.black_pawn:
 				return color+'fa-chess-pawn';
-			case Piece.white_rook:
+			case Piece.black_rook:
 				return color+'fa-chess-rook';
-			case Piece.white_knight:
+			case Piece.black_knight:
 				return color+'fa-chess-knight';
-			case Piece.white_bishop:
+			case Piece.black_bishop:
 				return color+'fa-chess-bishop';
-			case Piece.white_queen:
+			case Piece.black_queen:
 				return color+'fa-chess-queen';
-			case Piece.white_king:
+			case Piece.black_king:
 				return color+'fa-chess-king';
 		}
-		return "";
+		return "fa-empty";
 	}
     
     public select(timeline: number, board: number, x: number, y: number) {
-		
+		if (this.zoom < 4) {
+			this.selectBoard(timeline, board);
+		} else {
+			this.selectSquare(timeline, board, x, y);
+		}
+	}
+	
+	public selectBoard(timeline: number, board: number) {
+		this.zoom = 4;
+		var el = document.querySelector('.content');
+		var board = document.querySelector('.content');
+		el.scrollLeft = board.scroll
+	}
+	
+	public selectSquare(timeline: number, board: number, x: number, y: number) {
 	}
 	
 	public confirm() {
