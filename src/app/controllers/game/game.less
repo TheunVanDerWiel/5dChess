@@ -14,8 +14,6 @@ main {
 	overflow: auto;
 	
 	.content {
-		margin: auto;
-
 		&.zoom-1, &.zoom-2, &.zoom-3, &.zoom-4, &.zoom-5 {
 			transform-origin: top left;
 		}
@@ -62,11 +60,15 @@ main {
 	border: 5px solid #8BBEB2;
 	margin: 10px;
 	
-	&>div>div {
-		display: inline-block;
-		width: 24px;
-		height: 24px;
-		text-align: center;
+	&>div {
+		white-space: nowrap;
+		
+		&>div {
+			display: inline-block;
+			width: 24px;
+			height: 24px;
+			text-align: center;
+		}
 	}
 	
 	&>div:nth-child(2n)>div:nth-child(2n+1), &>div:nth-child(2n+1)>div:nth-child(2n) {

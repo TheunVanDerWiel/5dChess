@@ -16,14 +16,12 @@
 					</li>
 				</ul>
 			</div>
-			<div class="container-fluid">
-				<div class="d-flex">
+			<div class="d-flex">
 				<div class="nav-item">
 					<button type="button" class="nav-link" (click)="zoom -= 1" title="Zoom out" [disabled]="zoom == 1"><i class="fas fa-magnifying-glass-minus"></i></button>
 				</div>
 				<div class="nav-item">
 					<button type="button" class="nav-link" (click)="zoom += 1" title="Zoom in" [disabled]="zoom == 5"><i class="fas fa-magnifying-glass-plus"></i></button>
-				</div>
 				</div>
 			</div>
 		</div>
@@ -31,37 +29,53 @@
 </header>
 
 <main>
-	<section class="content zoom-{{zoom}}">
+	<table class="content zoom-{{zoom}}">
 	@if (!!state) {
+		<thead>
+		<tr>
+			<th></th>
+			@let timeSteps = [].constructor(grid.steps);
+			@for (step of timeSteps; track $index) {
+				<th style="width: {{boardSize}}px;">{{$index}}</th>
+			}
+		</tr>
+		</thead>
+		<tbody>
 		@for (timeline of state.TimeLines; track $index) {
-			<div class="timeline">
-				@for (board of timeline; track $index) {
-					@if (board === null) {
-						<div class="empty"></div>
-					} @else if (board.hasOwnProperty('Source')) {
-						<div class="split"></div>
-					} @else {
-						<div class="board">
-							@for (row of castBoard(board).Squares; track $index) {
-								@let $parentIndex = $index;
-								<div class="">
-									@for (square of row; track $index) {
-										<div class="square">
-											@if (square !== null) {
-												<i [ngClass]="getIcon(square, $index, $parentIndex)"></i>
-											} @else {
-												&nbsp;
-											}
-										</div>
-									}
-								</div>
-							}
-						</div>
+			@let $timelineIndex = $index;
+			<tr class="timeline">
+				<th>{{timeline.Index}}</th>
+				@if (!!timeline.Origin) {
+					@let timeSteps = [].constructor(timeline.Origin.Time);
+					@for (step of timeSteps; track $index) {
+						<td></td>
 					}
 				}
-			</div>
+				@for (board of timeline.Boards; track $index) {
+					@let $boardIndex = $index;
+					<td>
+						<div class="board">
+						@for (row of board.Squares; track $index) {
+							@let $parentIndex = $index;
+							<div class="">
+								@for (square of row; track $index) {
+									<div class="square" (click)="select($timelineIndex, $boardIndex, $parentIndex, $index)">
+										@if (square !== null) {
+											<i [ngClass]="getIcon(square, $index, $parentIndex)"></i>
+										} @else {
+											&nbsp;
+										}
+									</div>
+								}
+							</div>
+						}
+						</div>
+					</td>
+				}
+			</tr>
 		}
+		</tbody>
 	}
-	</section>
+	</table>
 </main>
 </section>

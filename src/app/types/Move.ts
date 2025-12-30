@@ -7,5 +7,5 @@ export class BoardMove {
 }
 
 export class BoardReference {
-	constructor(public Index: number, public X: number, public Y: number) {}
+	constructor(public TimeLine: number, public Board: number, public X: number, public Y: number) {}
 }
