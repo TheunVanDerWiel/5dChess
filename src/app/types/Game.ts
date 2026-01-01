@@ -2,7 +2,7 @@ import { GameState } from "./GameState";
 import { Move } from "./Move";
 
 export class Game {
-	constructor(public Player: number, public StartingState: GameState, public StartingPlayer: number, public Moves: Move[], public ActivePlayer: number, public Status: GameStatus, public WinnerPlayer: number | null) {}
+	constructor(public Player: number, public StartingState: GameState, public StartingPlayer: number, public Moves: Move[], public Status: GameStatus, public WinnerPlayer: number | null) {}
 }
 
 export enum GameStatus {
@@ -39,9 +39,14 @@ export enum Piece {
 	white_common_king = 2049
 }
 
+export enum Color {
+	black = 0,
+	white = 1
+}
+
 export namespace Piece {
-	export function color(piece: Piece): number {
-		return piece & 1;
+	export function color(piece: Piece): Color {
+		return (piece & 1) as Color;
 	}
 	
 	export function type(piece: Piece): Piece {

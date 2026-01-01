@@ -59,7 +59,7 @@
 							@let $parentIndex = $index;
 							<div class="">
 								@for (square of row; track $index) {
-									<div class="square" (click)="select($timelineIndex, $boardIndex, $parentIndex, $index)">
+									<div class="square" [ngClass]="getHighlight($timelineIndex, $boardIndex, $parentIndex, $index)" (click)="select($timelineIndex, $boardIndex, $parentIndex, $index)">
 										@if (square !== null) {
 											<i [ngClass]="getIcon(square, $index, $parentIndex)"></i>
 										} @else {
@@ -78,4 +78,37 @@
 	}
 	</table>
 </main>
+
+<footer>
+	<nav class="navbar bg-dark text-light" aria-label="Actions">
+		<div class="container-fluid">
+			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+				<li class="nav-item">
+					@if (isPlayerTurn()) {
+						<span>Your turn.</span>
+					} @else {
+						<span>Waiting for other player.</span>
+					}
+				</li>
+				@if (isPlayerTurn()) {
+					@if (!!selectedSquare) {
+						<li class="nav-item">
+							<button type="button" class="nav-link" (click)="deselect()" title="Deselect"><i class="fas fa-ban"></i> Deselect</button>
+						</li>
+					}
+					@if (move.Pieces.length > 0) {
+						<li class="nav-item">
+							<button type="button" class="nav-link" (click)="undo()" title="Undo"><i class="fas fa-undo"></i> Undo</button>
+						</li>
+					}
+					@if (isMoveComplete()) {
+						<li class="nav-item">
+							<button type="button" class="nav-link" (click)="confirm()" title="Submit"><i class="fas fa-share"></i> Submit</button>
+						</li>
+					}
+				}
+			</ul>
+		</div>
+	</nav>
+</footer>
 </section>

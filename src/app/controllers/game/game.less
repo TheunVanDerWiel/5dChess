@@ -5,7 +5,7 @@
 	width: 100vw;
 }
 
-header {
+header, footer {
 	flex: 0 1 auto;
 }
 
@@ -68,6 +68,21 @@ main {
 			width: 24px;
 			height: 24px;
 			text-align: center;
+			position: relative;
+			
+			&.border-selected:after {
+				content: ' ';
+				position: absolute;
+				top: 0; left: 0; bottom: 0; right: 0;
+				background: radial-gradient(rgba(0,0,0,0), var(--bs-danger));
+			}
+	
+			&.border-selectable {
+				content: ' ';
+				position: absolute;
+				top: 0; left: 0; bottom: 0; right: 0;
+				background: radial-gradient(rgba(0,0,0,0), var(--bs-success));
+			}
 		}
 	}
 	
