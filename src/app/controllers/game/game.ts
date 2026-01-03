@@ -241,9 +241,7 @@ export class Game implements OnInit, OnDestroy {
 		switch (Piece.type(piece)) {
 			case Piece.black_pawn:
 				var direction = Piece.color(piece) == this.user.color ? -1 : 1;
-				this.repeatMovesUntilBlocked([[[direction,0,0,0],[0,0,direction,0]]],
-					this.isStartingPosition(this.selectedSquare) ? 2 : 1,
-					false);
+				this.repeatMovesUntilBlocked([[[direction,0,0,0],[0,0,direction,0]]], this.isStartingPosition(this.selectedSquare) ? 2 : 1, false);
 				this.repeatMovesUntilBlocked([[[direction,-2,0,0],[direction,2,0,0],[0,0,direction,-1],[0,0,direction,1]]], 1, true);
 				break;
 			case Piece.black_rook:
@@ -265,12 +263,11 @@ export class Game implements OnInit, OnDestroy {
 				break;
 			case Piece.black_king:
 				this.repeatMovesUntilBlocked(this.moveMatrix, 1);
+				// TODO castling
 				break;
 			case Piece.black_brawn:
 				var direction = Piece.color(piece) == this.user.color ? -1 : 1;
-				this.repeatMovesUntilBlocked([[[direction,0,0,0],[0,0,direction,0]]],
-					this.isStartingPosition(this.selectedSquare) ? 2 : 1,
-					false);
+				this.repeatMovesUntilBlocked([[[direction,0,0,0],[0,0,direction,0]]], this.isStartingPosition(this.selectedSquare) ? 2 : 1, false);
 				this.repeatMovesUntilBlocked([[[direction,-2,0,0],[direction,2,0,0],[direction,0,0,-1],[direction,0,0,1],[0,-2,direction,0],[0,2,direction,0],[0,0,direction,-1],[0,0,direction,1]]], 1, true);
 				break;
 			case Piece.black_unicorn:
@@ -334,10 +331,25 @@ export class Game implements OnInit, OnDestroy {
 	}
 	
 	private isStartingPosition(position: BoardReference): boolean {
+		if (!this.state) { return false; }
+		var timeline = position.TimeLine, board = position.Board, piece = this.getPieceAt(position);
+		while (board >= 0 || this.state.TimeLines[timeline].Origin !== undefined) {
+			if (this.getPieceAt(new BoardReference(timeline, board, position.X, position.Y)) !== piece) {
+				return false;
+			}
+			board -= 2;
+			while (board < 0 && this.state.TimeLines[timeline].Origin !== undefined) {
+				board += this.state.TimeLines[timeline].Origin.Time;
+				timeline += this.state.TimeLines[timeline].Origin.Origin;
+				board -= this.state.TimeLines[timeline].Origin.Time;
+			}
+		}
 		return true;
 	}
     
     private updateState(move: BoardMove) {
+		// TODO en passant capturing
+		// TODO castling
 		if (!this.state) { return; }
 		if (move.FromLocation.TimeLine == move.ToLocation.TimeLine && move.FromLocation.Board == move.ToLocation.Board) {
 			// Move on the same board
