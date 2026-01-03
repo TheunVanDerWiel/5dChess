@@ -28,9 +28,16 @@ export class Game implements OnInit, OnDestroy {
 	public zoom = 4;
 	public boardSize = 0;
 	public grid = { steps: 0, currentStep: 0 };
+	public user: { id: string | null, color: Color } = { id: null, color: Color.black };
 	
 	private subscriptions = new Subscription();
-	private user: { id: string | null, color: Color } = { id: null, color: Color.black };
+	private moveMatrix = [
+		// Possible moves in 1, 2, 3, and 4 dimensions
+		[[-1,0,0,0],[1,0,0,0],[0,-2,0,0],[0,0,-1,0],[0,0,1,0],[0,0,0,-1],[0,0,0,1]],
+		[[-1,-2,0,0],[-1,2,0,0],[-1,0,-1,0],[-1,0,1,0],[-1,0,0,-1],[-1,0,0,1],[1,-2,0,0],[1,2,0,0],[1,0,-1,0],[1,0,1,0],[1,0,0,-1],[1,0,0,1],[0,-2,-1,0],[0,-2,1,0],[0,-2,0,-1],[0,-2,0,1],[0,0,-1,-1],[0,0,-1,1],[0,0,1,-1],[0,0,1,1]],
+		[[-1,-2,-1,0],[-1,-2,1,0],[-1,-2,0,-1],[-1,-2,0,1],[-1,2,-1,0],[-1,2,1,0],[-1,2,0,-1],[-1,2,0,1],[-1,0,-1,-1],[-1,0,-1,1],[-1,0,1,-1],[-1,0,1,1],[1,-2,-1,0],[1,-2,1,0],[1,-2,0,-1],[1,-2,0,1],[1,2,-1,0],[1,2,1,0],[1,2,0,-1],[1,2,0,1],[1,0,-1,-1],[1,0,-1,1],[1,0,1,-1],[1,0,1,1]],
+		[[-1,-2,-1,-1],[-1,-2,-1,1],[-1,-2,1,-1],[-1,-2,1,1],[-1,2,-1,-1],[-1,2,-1,1],[-1,2,1,-1],[-1,2,1,1],[1,-2,-1,-1],[1,-2,-1,1],[1,-2,1,-1],[1,-2,1,1],[1,2,-1,-1],[1,2,-1,1],[1,2,1,-1],[1,2,1,1]]
+	];
 	
 	private router = inject(Router);
 	private route = inject(ActivatedRoute);
@@ -69,7 +76,7 @@ export class Game implements OnInit, OnDestroy {
     }
 	
 	public getIcon(piece: Piece, x: number, y: number): string {
-		var color = Piece.color(piece) == (x+y)%2 ? 'far ' : 'fas ';
+		var color = Piece.color(piece) == 1-(x+y)%2 ? 'far ' : 'fas ';
 		switch (Piece.type(piece)) {
 			case Piece.black_pawn:
 				return color+'fa-chess-pawn';
@@ -116,12 +123,22 @@ export class Game implements OnInit, OnDestroy {
 	}
 	
 	public isMoveComplete(): boolean {
-		// TODO
-		return false;
+		if (!this.state) { return false; }
+		// Check all active boards have a move
+		for (var i = 0; i < this.state.TimeLines.length; i++) {
+			if (this.state.TimeLines[i].Boards.length + (this.state.TimeLines[i].Origin?.Time || 0) <= this.grid.currentStep+1) {
+				return false;
+			}
+		}
+		return true;
 	}
 	
 	public confirm() {
+		if (!this.isMoveComplete()) { return; }
+		// TODO send to server/other player
+		this.moves.push(this.move);
 		this.move = new Move([]);
+		this.determineActiveStep();
 	}
 	
 	public undo() {
@@ -140,6 +157,7 @@ export class Game implements OnInit, OnDestroy {
 				this.state.TimeLines.splice(move.ToLocation.TimeLine, 1);
 			}
 		}
+		this.selectedSquare = null;
 		this.move.Pieces.splice(this.move.Pieces.length-1, 1);
 		this.determineActiveStep();
 	}
@@ -157,7 +175,11 @@ export class Game implements OnInit, OnDestroy {
 	private determineActiveStep() {
 		if (!this.state) { return; }
 		this.grid.steps = Math.max(...this.state.TimeLines.map(t => t.Boards.length));
-		// TODO
+		// TODO take timeline count diff into account, ignoring surplus timelines
+		this.grid.currentStep = Math.min(...this.state.TimeLines.map(t => t.Boards.length + (t.Origin?.Time || 0) - 1));
+		if (this.grid.currentStep%2 == this.user.color) {
+			this.grid.currentStep--;
+		}
 	}
 
 	private reverseState() {
@@ -193,9 +215,13 @@ export class Game implements OnInit, OnDestroy {
 			if (BoardReference.equals(this.selectedSquare, timeline, board, x, y)) {
 				this.deselect();
 			} else if (BoardReference.contains(this.validTargetSquares, timeline, board, x, y)) {
-				this.move.Pieces.push(new BoardMove(this.selectedSquare, new BoardReference(timeline, board, x, y)));
-				this.updateState(this.move.Pieces[this.move.Pieces.length-1]);
-				this.selectedSquare = null;
+				var piece = this.getPieceAt(this.selectedSquare);
+				if (piece !== null && Piece.color(piece) == this.user.color) {
+					this.move.Pieces.push(new BoardMove(this.selectedSquare, new BoardReference(timeline, board, x, y)));
+					this.updateState(this.move.Pieces[this.move.Pieces.length-1]);
+					this.selectedSquare = null;
+					this.determineActiveStep();
+				}
 			}
 		}
 	}
@@ -209,7 +235,106 @@ export class Game implements OnInit, OnDestroy {
 	
 	private determineValidTargetSquares() {
 		this.validTargetSquares = [];
-		// TODO
+		if (!this.state || !this.selectedSquare) { return; }
+		var piece = this.state.TimeLines[this.selectedSquare.TimeLine].Boards[this.selectedSquare.Board].Squares[this.selectedSquare.X][this.selectedSquare.Y];
+		if (piece === null) { return; }
+		switch (Piece.type(piece)) {
+			case Piece.black_pawn:
+				var direction = Piece.color(piece) == this.user.color ? -1 : 1;
+				this.repeatMovesUntilBlocked([[[direction,0,0,0],[0,0,direction,0]]],
+					this.isStartingPosition(this.selectedSquare) ? 2 : 1,
+					false);
+				this.repeatMovesUntilBlocked([[[direction,-2,0,0],[direction,2,0,0],[0,0,direction,-1],[0,0,direction,1]]], 1, true);
+				break;
+			case Piece.black_rook:
+				this.repeatMovesUntilBlocked([this.moveMatrix[0]]);
+				break;
+			case Piece.black_knight:
+				this.repeatMovesUntilBlocked([
+					[[-2,-2,0,0],[-2,2,0,0],[-2,0,-1,0],[-2,0,1,0],[-2,0,0,-1],[-2,0,0,1],[2,-2,0,0],[2,2,0,0],[2,0,-1,0],[2,0,1,0],[2,0,0,-1],[2,0,0,1]],
+					[[-1,-4,0,0],[1,-4,0,0],[0,-4,-1,0],[0,-4,1,0],[0,-4,0,-1],[0,-4,0,1],[-1,4,0,0],[1,4,0,0],[0,4,-1,0],[0,4,1,0],[0,4,0,-1],[0,4,0,1]],
+					[[-1,0,-2,0],[1,0,-2,0],[0,-2,-2,0],[0,2,-2,0],[0,0,-2,-1],[0,0,-2,1],[-1,0,2,0],[1,0,2,0],[0,-2,2,0],[0,2,2,0],[0,0,2,-1],[0,0,2,1]],
+					[[-1,0,0,-2],[1,0,0,-2],[0,-2,0,-2],[0,2,0,-2],[0,0,-1,-2],[0,0,1,-2],[-1,0,0,2],[1,0,0,2],[0,-2,0,2],[0,2,0,2],[0,0,-1,2],[0,0,1,2]]
+				], 1);
+				break;
+			case Piece.black_bishop:
+				this.repeatMovesUntilBlocked([this.moveMatrix[1]]);
+				break;
+			case Piece.black_queen:
+				this.repeatMovesUntilBlocked(this.moveMatrix);
+				break;
+			case Piece.black_king:
+				this.repeatMovesUntilBlocked(this.moveMatrix, 1);
+				break;
+			case Piece.black_brawn:
+				var direction = Piece.color(piece) == this.user.color ? -1 : 1;
+				this.repeatMovesUntilBlocked([[[direction,0,0,0],[0,0,direction,0]]],
+					this.isStartingPosition(this.selectedSquare) ? 2 : 1,
+					false);
+				this.repeatMovesUntilBlocked([[[direction,-2,0,0],[direction,2,0,0],[direction,0,0,-1],[direction,0,0,1],[0,-2,direction,0],[0,2,direction,0],[0,0,direction,-1],[0,0,direction,1]]], 1, true);
+				break;
+			case Piece.black_unicorn:
+				this.repeatMovesUntilBlocked([this.moveMatrix[2]]);
+				break;
+			case Piece.black_dragon:
+				this.repeatMovesUntilBlocked([this.moveMatrix[3]]);
+				break;
+			case Piece.black_princess:
+				this.repeatMovesUntilBlocked([this.moveMatrix[0],this.moveMatrix[1]]);
+				break;
+			case Piece.black_royal_queen:
+				this.repeatMovesUntilBlocked(this.moveMatrix);
+				break;
+			case Piece.black_common_king:
+				this.repeatMovesUntilBlocked(this.moveMatrix, 1);
+				break;
+			default: break;
+		}
+	}
+	
+	private repeatMovesUntilBlocked(moves: number[][][], maxDistance = -1, ifIsCapture: boolean | null = null) {
+		if (!this.selectedSquare) { return; }
+		var piece = this.getPieceAt(this.selectedSquare);
+		if (piece === null) { return; }
+		var color = Piece.color(piece);
+		for (var i = 0; i < moves.length; i++) {
+			for (var j = 0; j < moves[i].length; j++) {
+				var distance = 1, blocked = false;
+				while (!blocked) {
+					var target = this.offsetBoardReference(this.selectedSquare, moves[i][j], distance);
+					if (target === undefined) {
+						blocked = true;
+					} else {
+						var targetPiece = this.getPieceAt(target);
+						if ((ifIsCapture !== true && targetPiece === null) || (ifIsCapture !== false && targetPiece !== null && Piece.color(targetPiece) != color)) {
+							this.validTargetSquares.push(target);
+						}
+						if (targetPiece !== null || (maxDistance > 0 && distance++ >= maxDistance)) {
+							blocked = true;
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	private offsetBoardReference(origin: BoardReference, direction: number[], distance: number): BoardReference | undefined {
+		var timeline = origin.TimeLine + distance * direction[0];
+		if (!this.state || timeline < 0 || timeline >= this.state.TimeLines.length) { return undefined; }
+		var board = origin.Board + (this.state.TimeLines[origin.TimeLine].Origin?.Time ?? 0) + (distance * direction[1]) - (this.state.TimeLines[timeline].Origin?.Time ?? 0);
+		if (board < 0 || board >= this.state.TimeLines[timeline].Boards.length) { return undefined; }
+		var x = origin.X + distance * direction[2], y = origin.Y + distance * direction[3],
+			numSquares = this.state.TimeLines[timeline].Boards[board].Squares.length;
+		if (x < 0 || x >= numSquares || y < 0 || y >= numSquares) { return undefined; }
+		return new BoardReference(timeline, board, x, y);
+	}
+	
+	private getPieceAt(origin: BoardReference): Piece | null {
+		return this.state?.TimeLines[origin.TimeLine]?.Boards[origin.Board]?.Squares[origin.X][origin.Y] ?? null;
+	}
+	
+	private isStartingPosition(position: BoardReference): boolean {
+		return true;
 	}
     
     private updateState(move: BoardMove) {

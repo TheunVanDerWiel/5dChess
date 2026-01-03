@@ -51,14 +51,25 @@ main {
 		&.zoom-5 {
 			transform: scale(2);
 		}
+		
+		.active {
+			background-color: #8BBEB2;
+		}
 	}
 }
 
 .board {
 	display: inline-block;
 	background-color: #fff;
-	border: 5px solid #8BBEB2;
 	margin: 10px;
+
+	&.black {
+		border: 5px solid #000;
+	}
+
+	&.white {
+		border: 5px solid #fff;
+	}
 	
 	&>div {
 		white-space: nowrap;
@@ -74,10 +85,10 @@ main {
 				content: ' ';
 				position: absolute;
 				top: 0; left: 0; bottom: 0; right: 0;
-				background: radial-gradient(rgba(0,0,0,0), var(--bs-danger));
+				background: radial-gradient(rgba(0,0,0,0), var(--bs-info));
 			}
 	
-			&.border-selectable {
+			&.border-selectable:after {
 				content: ' ';
 				position: absolute;
 				top: 0; left: 0; bottom: 0; right: 0;

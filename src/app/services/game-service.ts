@@ -16,14 +16,14 @@ export class GameService {
 	getGame(gameId: number, userId: string): Observable<Game> {
 		// TODO: cleanup after testing
 		var board = new Board([
-			[Piece.white_rook,Piece.white_knight,Piece.white_bishop,Piece.white_queen,Piece.white_king,Piece.white_bishop,Piece.white_knight,Piece.white_rook],
-			[Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn],
-			[null,null,null,null,null,null,null,null],
-			[null,null,null,null,null,null,null,null],
-			[null,null,null,null,null,null,null,null],
-			[null,null,null,null,null,null,null,null],
+			[Piece.black_rook,Piece.black_knight,Piece.black_bishop,Piece.black_queen,Piece.black_king,Piece.black_bishop,Piece.black_knight,Piece.black_rook],
 			[Piece.black_pawn,Piece.black_pawn,Piece.black_pawn,Piece.black_pawn,Piece.black_pawn,Piece.black_pawn,Piece.black_pawn,Piece.black_pawn],
-			[Piece.black_rook,Piece.black_knight,Piece.black_bishop,Piece.black_queen,Piece.black_king,Piece.black_bishop,Piece.black_knight,Piece.black_rook]
+			[null,null,null,null,null,null,null,null],
+			[null,null,null,null,null,null,null,null],
+			[null,null,null,null,null,null,null,null],
+			[null,null,null,null,null,null,null,null],
+			[Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn,Piece.white_pawn],
+			[Piece.white_rook,Piece.white_knight,Piece.white_bishop,Piece.white_queen,Piece.white_king,Piece.white_bishop,Piece.white_knight,Piece.white_rook]
 		]);
 		var state = new GameState([
 			new TimeLine(0, [board], undefined)

@@ -52,4 +52,8 @@ export namespace Piece {
 	export function type(piece: Piece): Piece {
 		return (piece | 1) - 1;
 	}
+	
+	export function isRoyal(piece: Piece): boolean {
+		return (piece & 1056) > 0;
+	}
 }

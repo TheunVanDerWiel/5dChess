@@ -36,7 +36,7 @@
 			<th></th>
 			@let timeSteps = [].constructor(grid.steps);
 			@for (step of timeSteps; track $index) {
-				<th style="width: {{boardSize}}px;">{{$index}}</th>
+				<th [ngClass]="{ active: $index == grid.currentStep }" style="width: {{boardSize}}px;">{{$index}}</th>
 			}
 		</tr>
 		</thead>
@@ -53,8 +53,8 @@
 				}
 				@for (board of timeline.Boards; track $index) {
 					@let $boardIndex = $index;
-					<td>
-						<div class="board">
+					<td [ngClass]="{ active: $index + (timeline.Origin?.Time || 0) == grid.currentStep }">
+						<div class="board" [ngClass]="($index + (timeline.Origin?.Time || 0))%2 == user.color ? 'black' : 'white'">
 						@for (row of board.Squares; track $index) {
 							@let $parentIndex = $index;
 							<div class="">
