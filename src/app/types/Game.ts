@@ -2,7 +2,7 @@ import { GameState } from "./GameState";
 import { Move } from "./Move";
 
 export class Game {
-	constructor(public Player: number, public StartingState: GameState, public StartingPlayer: number, public Moves: Move[], public Status: GameStatus, public WinnerPlayer: number | null) {}
+	constructor(public Id: number, public StartingPlayer: number, public StartingState: GameState, public ActivePlayer: number, public Moves: Move[], public Status: GameStatus, public WinnerPlayer: number | null) {}
 }
 
 export enum GameStatus {

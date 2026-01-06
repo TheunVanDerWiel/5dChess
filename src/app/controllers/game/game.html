@@ -7,7 +7,7 @@
 			</button>
 			<div class="collapse navbar-collapse" [ngClass]="{ show: showMenu }">
 				<ul class="navbar-nav me-auto mb-2 mb-lg-0">
-					<li class="nav-item"><span class="nav-link" title="Game ID"><i class="fas fa-chess"></i> {{gameId}}</span></li>
+					<li class="nav-item"><span class="nav-link" title="Game ID"><i class="fas fa-chess"></i> {{game?.Id}}</span></li>
 					<li class="nav-item">
 						<a class="nav-link" routerLink="/" title="Exit"><i class="fas fa-power-off"></i> Main menu</a>
 					</li>
@@ -29,14 +29,14 @@
 </header>
 
 <main>
-	<table class="content zoom-{{zoom}}">
+	<table class="content" [ngClass]="'zoom-'+zoom">
 	@if (!!state) {
 		<thead>
 		<tr>
 			<th></th>
 			@let timeSteps = [].constructor(grid.steps);
 			@for (step of timeSteps; track $index) {
-				<th [ngClass]="{ active: $index == grid.currentStep }" style="width: {{boardSize}}px;">{{$index}}</th>
+				<th [ngClass]="{ active: $index == grid.currentStep }" [style]="{ width: boardSize+'px' }">{{$index}}</th>
 			}
 		</tr>
 		</thead>
@@ -54,7 +54,7 @@
 				@for (board of timeline.Boards; track $index) {
 					@let $boardIndex = $index;
 					<td [ngClass]="{ active: $index + (timeline.Origin?.Time || 0) == grid.currentStep }">
-						<div class="board" [ngClass]="($index + (timeline.Origin?.Time || 0))%2 == user.color ? 'black' : 'white'">
+						<div class="board" [ngClass]="($index + (timeline.Origin?.Time || 0))%2 == getUserColor() ? 'black' : 'white'">
 						@for (row of board.Squares; track $index) {
 							@let $parentIndex = $index;
 							<div class="">

@@ -29,7 +29,7 @@ SET time_zone = "+00:00";
 
 DROP TABLE IF EXISTS `game`;
 CREATE TABLE IF NOT EXISTS `game` (
-  `id` int NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
   `player1` varchar(64) COLLATE utf8mb4_unicode_520_ci NOT NULL,
   `player2` varchar(64) COLLATE utf8mb4_unicode_520_ci DEFAULT NULL,
   `starting_state` text COLLATE utf8mb4_unicode_520_ci NOT NULL,
@@ -40,13 +40,6 @@ CREATE TABLE IF NOT EXISTS `game` (
   `winner_player` tinyint(1) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
-
---
--- Gegevens worden geëxporteerd voor tabel `game`
---
-
-INSERT INTO `game` (`id`, `player1`, `player2`, `starting_state`, `starting_player`, `moves`, `active_player`, `status`, `winner_player`) VALUES
-(123456, 'l954eyw8d1h0cy159a2ysnd8bew5cbm2ke4of3fv4xz1vieq3d3xm6tr9m8vklmd', NULL, '{\"TimeLines\":[[{\"Squares\":[[2,3,4,5,6,4,3,2],[1,1,1,1,1,1,1,1],[null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null],[13,13,13,13,13,13,13,13],[14,15,16,18,17,16,15,14]]}]]}', 1, '[]', 1, 'starting', NULL);
 
 -- --------------------------------------------------------
 

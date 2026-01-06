@@ -1,0 +1,27 @@
+<IfModule mod_rewrite.c>
+	Options -MultiViews
+	Options +FollowSymlinks
+	RewriteEngine On
+	
+	# Remove www. so ajax calls aren't considered cross-domain and insecure.
+	RewriteCond %{HTTP_HOST} ^www\.(.*) [NC]
+	RewriteRule ^(.*)$ http://%1/$1 [R=301,NC,L]
+	
+	# Redirect all requests to the php includes to angular
+	RewriteCond %{REQUEST_URI} ^\/vendor(.*)$
+	RewriteRule ^(.*)$ index.html [QSA,L]
+	
+	# Redirect all api requests to the api service
+	RewriteCond %{REQUEST_URI} ^\/api(.*)$
+	RewriteRule ^(.*)$ api/index.php [QSA,L]
+	RewriteRule .* - [env=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+	# Dont redirect file requests
+	RewriteCond %{REQUEST_FILENAME} -s [OR]
+	RewriteCond %{REQUEST_FILENAME} -l [OR]
+	RewriteCond %{REQUEST_FILENAME} -d
+	RewriteRule ^(.*)$ - [NC,L]
+
+	# Redirect all other requests to angular
+	RewriteRule ^(.*)$ index.html [NC,L]
+</IfModule>

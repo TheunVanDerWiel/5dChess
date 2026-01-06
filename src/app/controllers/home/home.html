@@ -7,7 +7,7 @@
 			<h4>Credits; <a href="https://store.steampowered.com/app/1349230/5D_Chess_With_Multiverse_Time_Travel/" target="_blank">Conor Petersen, Thunkspace, LLC</a></h4>
 		</div>
 		
-		@if (userKnown === true) {
+		@if (userId !== undefined) {
 			<div class="row mb-5">
 				<div class="col-12 col-sm-6 d-grid">
 					<button type="button" class="btn btn-outline-primary btn-lg" [ngClass]="{ active: mode === MODE_NEW }" (click)="mode = MODE_NEW"><i class="fas fa-rocket"></i> New game</button>
@@ -41,8 +41,7 @@
 					<button class="btn btn-primary btn-lg" type="button" (click)="join()"><span class="d-none d-sm-inline">Join </span><i class="fas fa-play"></i></button>
 				</div>
 			}
-		}
-		@if (userKnown === false) {
+		} @else {
 			<div class="alert alert-danger">The game cannot be loaded. Make sure you accept cookies for this website.</div>
 		}
 	</div>

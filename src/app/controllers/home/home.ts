@@ -1,10 +1,11 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserService } from 'src/app/services/user-service';
 import { GameService } from 'src/app/services/game-service';
 import { Router } from '@angular/router';
 import { LocalStorageService } from 'src/app/services/local-storage-service';
+import { Subscription } from 'rxjs';
 
 @Component({
 	selector: 'app-home',
@@ -15,8 +16,8 @@ import { LocalStorageService } from 'src/app/services/local-storage-service';
 	templateUrl: './home.html',
 	styleUrl: './home.less',
 })
-export class Home implements OnInit {
-	public userKnown: boolean | undefined;
+export class Home implements OnInit, OnDestroy {
+	public userId: string | undefined;
 	public mode: number | undefined;
 	public gameId: number | undefined;
 	public typeId: number | undefined;
@@ -74,6 +75,8 @@ export class Home implements OnInit {
 		{ id: 78, parent: 7, name: 'Brawns' }
 	];
 	
+	private subscriptions = new Subscription();
+	
 	private router = inject(Router);
 	private localStorage = inject(LocalStorageService);
 	private userService = inject(UserService);
@@ -90,17 +93,36 @@ export class Home implements OnInit {
 			this.localStorage.setItem('userId', userId);
 			userId = this.localStorage.getItem('userId');
 		}
-		this.userKnown = userId !== null;
+		this.userId = userId !== null ? userId : undefined;
 	}
-	
+
+	ngOnDestroy(): void {
+	    this.subscriptions.unsubscribe();
+	}
+
 	public start(typeId: number) {
+		if (!this.userId) { return; }
+		
 		if (this.GAME_TYPES.filter(t => t.parent == typeId).length > 0) {
 			this.typeId = typeId;
 			return;
 		}
+		
+		if (typeId == 0) {
+			var all = this.GAME_TYPES.filter(t => t.parent !== undefined);
+			typeId = all[Math.floor(Math.random()*all.length)].id;
+		}
+		
+		this.subscriptions.add(this.gameService.create(this.userId, typeId).subscribe(gameId => {
+			this.router.navigateByUrl("/game/"+gameId);
+		}));
 	}
 	
 	public join() {
-		this.router.navigateByUrl("/game/"+this.gameId);
+		if (!this.userId || !this.gameId) { return; }
+		
+		this.subscriptions.add(this.gameService.join(this.gameId, this.userId).subscribe(gameId => {
+			this.router.navigateByUrl("/game/"+this.gameId);
+		}));
 	}
 }

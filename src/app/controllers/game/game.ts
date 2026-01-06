@@ -3,7 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { GameState, TimeLine, TimeLineOrigin, Board } from 'src/app/types/GameState';
-import { Piece, Color } from 'src/app/types/Game';
+import { Game as GameType, Piece, Color } from 'src/app/types/Game';
 import { LocalStorageService } from 'src/app/services/local-storage-service';
 import { GameService } from 'src/app/services/game-service';
 import { BoardReference, Move, BoardMove } from 'src/app/types/Move';
@@ -19,16 +19,15 @@ import { BoardReference, Move, BoardMove } from 'src/app/types/Move';
 })
 export class Game implements OnInit, OnDestroy {
 	public showMenu = false;
-	public gameId: number | undefined;
 	public state: GameState | undefined;
-	public moves: Move[] = [];
+	public game: GameType | undefined;
 	public move = new Move([]);
 	public selectedSquare: BoardReference | null = null;
 	public validTargetSquares: BoardReference[] = [];
 	public zoom = 4;
 	public boardSize = 0;
 	public grid = { steps: 0, currentStep: 0 };
-	public user: { id: string | null, color: Color } = { id: null, color: Color.black };
+	public userId: string | null = null;
 	
 	private subscriptions = new Subscription();
 	private moveMatrix = [
@@ -46,27 +45,27 @@ export class Game implements OnInit, OnDestroy {
     
     ngOnInit(): void {
         // Check if user is a player of the game
-        this.user.id = this.localStorage.getItem('userId');
-        if (this.user.id === null) {
+        this.userId = this.localStorage.getItem('userId');
+        if (this.userId === null) {
 			this.router.navigateByUrl('/');
 		}
 		this.subscriptions.add(this.route.params.subscribe(routeParams => {
-			this.gameId = routeParams['gameId'];
-			if (!this.gameId) {
+			var gameId = routeParams['gameId'];
+			if (!gameId) {
 				this.router.navigateByUrl('/');
 			}
 
 	        // Load game
-			this.subscriptions.add(this.gameService.getGame(this.gameId!, this.user.id!).subscribe(game => {
-				this.state = game.StartingState;
-				this.moves = game.Moves;
-				if (game.StartingPlayer == 1) {
-					this.user.color = Color.white;
-				} else {
+			this.subscriptions.add(this.gameService.getGame(gameId, this.userId!).subscribe(game => {
+				this.state = JSON.parse(JSON.stringify(game.StartingState));
+				this.game = game;
+				if (this.getUserColor() == Color.black) {
 					this.reverseState();
 				}
 				this.initializeState();
-				this.moves.forEach(m => m.Pieces.forEach(p => this.updateState(p)));
+				game.Moves.forEach(m => m.Pieces.forEach(p => this.updateState(p)));
+			}, error => {
+				this.router.navigateByUrl('/');
 			}));
 		}));
     }
@@ -106,8 +105,13 @@ export class Game implements OnInit, OnDestroy {
 		return "";
 	}
 	
+	public getUserColor(): Color {
+		return this.game?.StartingPlayer == 1 ? Color.white : Color.black;
+	}
+	
 	public isPlayerTurn(): boolean {
-		return this.moves.length%2 == (1-this.user.color);
+		if (!this.game) { return false; }
+		return this.game.ActivePlayer == 1;
 	}
 	
     public select(timeline: number, board: number, x: number, y: number) {
@@ -134,11 +138,16 @@ export class Game implements OnInit, OnDestroy {
 	}
 	
 	public confirm() {
-		if (!this.isMoveComplete()) { return; }
-		// TODO send to server/other player
-		this.moves.push(this.move);
-		this.move = new Move([]);
-		this.determineActiveStep();
+		if (!this.game || !this.userId || !this.isMoveComplete()) { return; }
+		this.subscriptions.add(this.gameService.confirmMove(this.game.Id, this.userId, this.move).subscribe(success => {
+			if (!this.game) { return; }
+			this.game.Moves.push(this.move);
+			this.game.ActivePlayer = 3-this.game.ActivePlayer;
+			this.move = new Move([]);
+			this.determineActiveStep();
+		}, error => {
+			// TODO error handling
+		}));
 	}
 	
 	public undo() {
@@ -175,9 +184,18 @@ export class Game implements OnInit, OnDestroy {
 	private determineActiveStep() {
 		if (!this.state) { return; }
 		this.grid.steps = Math.max(...this.state.TimeLines.map(t => t.Boards.length));
-		// TODO take timeline count diff into account, ignoring surplus timelines
-		this.grid.currentStep = Math.min(...this.state.TimeLines.map(t => t.Boards.length + (t.Origin?.Time || 0) - 1));
-		if (this.grid.currentStep%2 == this.user.color) {
+		
+		// Take timeline count diff into account, ignoring surplus timelines
+		var timelines = this.state.TimeLines;
+		var diff = timelines[timelines.length-1].Index + timelines[0].Index;
+		if (diff < -1) {
+			timelines = timelines.splice(0, (diff*-1)-1);
+		} else if (diff > 1) {
+			timelines = timelines.splice(timelines.length-diff, diff-1);
+		}
+		
+		this.grid.currentStep = Math.min(...timelines.map(t => t.Boards.length + (t.Origin?.Time || 0) - 1));
+		if (this.grid.currentStep%2 == this.getUserColor()) {
 			this.grid.currentStep--;
 		}
 	}
@@ -216,7 +234,7 @@ export class Game implements OnInit, OnDestroy {
 				this.deselect();
 			} else if (BoardReference.contains(this.validTargetSquares, timeline, board, x, y)) {
 				var piece = this.getPieceAt(this.selectedSquare);
-				if (piece !== null && Piece.color(piece) == this.user.color) {
+				if (piece !== null && Piece.color(piece) != this.getUserColor()) {
 					this.move.Pieces.push(new BoardMove(this.selectedSquare, new BoardReference(timeline, board, x, y)));
 					this.updateState(this.move.Pieces[this.move.Pieces.length-1]);
 					this.selectedSquare = null;
@@ -227,10 +245,10 @@ export class Game implements OnInit, OnDestroy {
 	}
 	
 	private isBoardActive(timeline: number, board: number): boolean {
-		if (!this.state) { return false; }
+		if (!this.state || !this.game) { return false; }
 		// Board must be the last board of the timeline & the last turn wasn't by the player
 		return board == this.state.TimeLines[timeline].Boards.length-1
-			&& ((this.state.TimeLines[timeline].Origin?.Time ?? 0) + this.state.TimeLines[timeline].Boards.length)%2 == this.user.color;
+			&& ((this.state.TimeLines[timeline].Origin?.Time ?? 0) + this.state.TimeLines[timeline].Boards.length)%2 != this.getUserColor();
 	}
 	
 	private determineValidTargetSquares() {
@@ -240,7 +258,7 @@ export class Game implements OnInit, OnDestroy {
 		if (piece === null) { return; }
 		switch (Piece.type(piece)) {
 			case Piece.black_pawn:
-				var direction = Piece.color(piece) == this.user.color ? -1 : 1;
+				var direction = Piece.color(piece) == this.getUserColor() ? -1 : 1;
 				this.repeatMovesUntilBlocked([[[direction,0,0,0],[0,0,direction,0]]], this.isStartingPosition(this.selectedSquare) ? 2 : 1, false);
 				this.repeatMovesUntilBlocked([[[direction,-2,0,0],[direction,2,0,0],[0,0,direction,-1],[0,0,direction,1]]], 1, true);
 				break;
@@ -266,7 +284,7 @@ export class Game implements OnInit, OnDestroy {
 				// TODO castling
 				break;
 			case Piece.black_brawn:
-				var direction = Piece.color(piece) == this.user.color ? -1 : 1;
+				var direction = Piece.color(piece) == this.getUserColor() ? -1 : 1;
 				this.repeatMovesUntilBlocked([[[direction,0,0,0],[0,0,direction,0]]], this.isStartingPosition(this.selectedSquare) ? 2 : 1, false);
 				this.repeatMovesUntilBlocked([[[direction,-2,0,0],[direction,2,0,0],[direction,0,0,-1],[direction,0,0,1],[0,-2,direction,0],[0,2,direction,0],[0,0,direction,-1],[0,0,direction,1]]], 1, true);
 				break;
@@ -339,9 +357,9 @@ export class Game implements OnInit, OnDestroy {
 			}
 			board -= 2;
 			while (board < 0 && this.state.TimeLines[timeline].Origin !== undefined) {
-				board += this.state.TimeLines[timeline].Origin.Time;
-				timeline += this.state.TimeLines[timeline].Origin.Origin;
-				board -= this.state.TimeLines[timeline].Origin.Time;
+				board += this.state.TimeLines[timeline].Origin!.Time;
+				timeline += this.state.TimeLines[timeline].Origin!.Origin;
+				board -= (this.state.TimeLines[timeline].Origin?.Time ?? 0);
 			}
 		}
 		return true;
@@ -358,14 +376,14 @@ export class Game implements OnInit, OnDestroy {
 			// Move from one board to another
 			if (move.FromLocation.TimeLine == move.ToLocation.TimeLine) {
 				// Timetravel move
-				var index = 0; // TODO determine if it should be added at the front or the back
+				var index = this.isPlayerTurn() ? 0 : this.state.TimeLines.length;
 				var board = this.state.TimeLines[move.ToLocation.TimeLine].Boards[move.ToLocation.Board];
 				this.state.TimeLines.splice(index, 0, new TimeLine(
-					this.state.TimeLines[index].Index+(index == 0 ? -1 : 1), 
+					index == 0 ? this.state.TimeLines[0].Index-1 : this.state.TimeLines[this.state.TimeLines.length-1].Index+1, 
 					[JSON.parse(JSON.stringify(board))], 
-					new TimeLineOrigin(move.ToLocation.Board+1, move.ToLocation.TimeLine)));
+					new TimeLineOrigin(move.ToLocation.Board+1, index == 0 ? move.ToLocation.TimeLine+1 : move.ToLocation.TimeLine*-1)));
 				move = new BoardMove(
-					new BoardReference(move.FromLocation.TimeLine+(move.FromLocation.TimeLine < index ? 0 : 1), move.FromLocation.Board, move.FromLocation.X, move.FromLocation.Y), 
+					new BoardReference(move.FromLocation.TimeLine+(index == 0 ? 1 : 0), move.FromLocation.Board, move.FromLocation.X, move.FromLocation.Y), 
 					new BoardReference(index, -1, move.ToLocation.X, move.ToLocation.Y));
 				this.addBoardClone(this.state.TimeLines[move.FromLocation.TimeLine]);
 			} else {
