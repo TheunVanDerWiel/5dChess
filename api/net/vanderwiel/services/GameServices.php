@@ -11,6 +11,7 @@ use Net\VanDerWiel\Entities\GameList;
 use Net\VanDerWiel\Entities\Game;
 use Net\VanDerWiel\Enums\GameStatus;
 use Net\VanDerWiel\Enums\GameType;
+use Net\VanDerWiel\Functions\MoveWebSocket;
 
 class GameServices extends BaseMiddleware {
 	public function register() {
@@ -115,6 +116,10 @@ class GameServices extends BaseMiddleware {
 				    }
 				    
 				    // TODO Check if userId is active player
+				    if (($body["UserId"] == $game->Player1 && $game->ActivePlayer != 1)
+				        || ($body["UserId"] == $game->Player2 && $game->ActivePlayer != 2)) {
+				        return $this->badRequest();
+				    }
 				    
 				    $moves = json_decode($game->Moves);
 				    $moves[] = $body["Move"];
@@ -124,10 +129,17 @@ class GameServices extends BaseMiddleware {
 				        return $this->internalServerError();
 				    }
 				    
-				    // TODO Send update to other player
-				    
 				    return $this->ok(true);
 				})->add(new JsonValidationMiddleware($this->app, $this->db, Model::GAME_EDIT_REQUEST));
+				
+				
+				/**
+				 * Check for updates
+				 */
+				$subGroup->get('moves/{currentMove}', function (Request $request, Response $response, $args) {
+				    $socket = new MoveWebSocket($args["id"], $args['currentMove']);
+				    $socket->start();
+				});
 			});
 		});
 	}

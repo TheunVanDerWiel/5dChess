@@ -1,11 +1,12 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
-import { GameState, TimeLine, TimeLineOrigin, Board } from 'src/app/types/GameState';
+import { GameState, TimeLine, TimeLineOrigin } from 'src/app/types/GameState';
 import { Game as GameType, Piece, Color } from 'src/app/types/Game';
 import { LocalStorageService } from 'src/app/services/local-storage-service';
 import { GameService } from 'src/app/services/game-service';
+import { GameNotification } from 'src/app/services/game-notification';
 import { BoardReference, Move, BoardMove } from 'src/app/types/Move';
 
 @Component({
@@ -41,7 +42,9 @@ export class Game implements OnInit, OnDestroy {
 	private router = inject(Router);
 	private route = inject(ActivatedRoute);
 	private gameService = inject(GameService);
+	private moveService = inject(GameNotification);
 	private localStorage = inject(LocalStorageService);
+	private changeDetector = inject(ChangeDetectorRef);
     
     ngOnInit(): void {
         // Check if user is a player of the game
@@ -55,23 +58,13 @@ export class Game implements OnInit, OnDestroy {
 				this.router.navigateByUrl('/');
 			}
 
-	        // Load game
-			this.subscriptions.add(this.gameService.getGame(gameId, this.userId!).subscribe(game => {
-				this.state = JSON.parse(JSON.stringify(game.StartingState));
-				this.game = game;
-				if (this.getUserColor() == Color.black) {
-					this.reverseState();
-				}
-				this.initializeState();
-				game.Moves.forEach(m => m.Pieces.forEach(p => this.updateState(p)));
-			}, error => {
-				this.router.navigateByUrl('/');
-			}));
+			this.loadGame(gameId);
 		}));
     }
 
     ngOnDestroy(): void {
         this.subscriptions.unsubscribe();
+		this.moveService.close();
     }
 	
 	public getIcon(piece: Piece, x: number, y: number): string {
@@ -172,7 +165,30 @@ export class Game implements OnInit, OnDestroy {
 	}
 
 	public forfeit() {
-		
+		// TODO
+	}
+	
+	public receiveUpdate(move: Move) {
+		// TODO
+	}
+	
+	private loadGame(gameId: number) {
+		this.subscriptions.add(this.gameService.getGame(gameId, this.userId!).subscribe(game => {
+			this.state = JSON.parse(JSON.stringify(game.StartingState));
+			this.game = game;
+			if (this.getUserColor() == Color.black) {
+				this.reverseState();
+			}
+			this.initializeState();
+			game.Moves.forEach(m => m.Pieces.forEach(p => this.updateState(p)));
+			this.changeDetector.detectChanges();
+			
+			// Listen to the websocket for updates
+			this.moveService.connect(game.Id, game.Moves.length);
+			this.subscriptions.add(this.moveService.getMessages().subscribe(this.receiveUpdate));
+		}, error => {
+			this.router.navigateByUrl('/');
+		}));
 	}
 
 	private initializeState() {
