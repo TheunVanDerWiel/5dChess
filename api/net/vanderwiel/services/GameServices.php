@@ -11,7 +11,6 @@ use Net\VanDerWiel\Entities\GameList;
 use Net\VanDerWiel\Entities\Game;
 use Net\VanDerWiel\Enums\GameStatus;
 use Net\VanDerWiel\Enums\GameType;
-use Net\VanDerWiel\Functions\MoveWebSocket;
 
 class GameServices extends BaseMiddleware {
 	public function register() {
@@ -28,7 +27,22 @@ class GameServices extends BaseMiddleware {
 			    $list = new GameList($this->db);
 			    $list->retrieve("player1=? or player2=?", array($params["userId"], $params["userId"]));
 			    
-			    return $this->ok($list->toJson());
+			    // A summary each: the full boards and move lists are far too much to
+			    // hand over for a menu, and the other player's id is nobody's business
+			    $summaries = array();
+			    foreach ($list->all() as $game) {
+			        $mine = $params["userId"] == $game->Player1;
+			        $moves = json_decode($game->Moves);
+			        $summaries[] = array(
+			            "Id" => $game->getId(),
+			            "Status" => $game->Status,
+			            "ActivePlayer" => $mine ? $game->ActivePlayer : 3-$game->ActivePlayer,
+			            "WinnerPlayer" => $mine || $game->WinnerPlayer === null ? $game->WinnerPlayer : 3-$game->WinnerPlayer,
+			            "Turns" => is_array($moves) ? count($moves) : 0,
+			            "Waiting" => $game->Player2 === null
+			        );
+			    }
+			    return $this->ok($summaries);
 			});
 			
 			
@@ -115,7 +129,6 @@ class GameServices extends BaseMiddleware {
 				        return $this->unauthorized();
 				    }
 				    
-				    // TODO Check if userId is active player
 				    if (($body["UserId"] == $game->Player1 && $game->ActivePlayer != 1)
 				        || ($body["UserId"] == $game->Player2 && $game->ActivePlayer != 2)) {
 				        return $this->badRequest();
@@ -134,12 +147,87 @@ class GameServices extends BaseMiddleware {
 				
 				
 				/**
-				 * Check for updates
+				 * Get every move made since the one the client last saw
 				 */
-				$subGroup->get('moves/{currentMove}', function (Request $request, Response $response, $args) {
-				    $socket = new MoveWebSocket($args["id"], $args['currentMove']);
-				    $socket->start();
+				$subGroup->get('/moves/{currentMove}', function (Request $request, Response $response, $args) {
+				    $params = $request->getQueryParams();
+				    if (!isset($params["userId"])) {
+				        return $this->badRequest();
+				    }
+				    
+				    $game = new Game($this->db);
+				    if (!$game->retrieve($args['id']) || ($game->Player1 != $params["userId"] && $game->Player2 != $params["userId"])) {
+				        return $this->notFound();
+				    }
+				    
+				    $moves = json_decode($game->Moves);
+				    if (!is_array($moves)) {
+				        $moves = array();
+				    }
+				    // All player references are relative to the user (1 = self, 2 = opponent)
+				    $mine = $params["userId"] == $game->Player1;
+				    return $this->ok(array(
+				        "Moves" => array_values(array_slice($moves, max(0, (int)$args['currentMove']))),
+				        "Status" => $game->Status,
+				        "ActivePlayer" => $mine ? $game->ActivePlayer : 3-$game->ActivePlayer,
+				        "WinnerPlayer" => $mine || $game->WinnerPlayer === null ? $game->WinnerPlayer : 3-$game->WinnerPlayer
+				    ));
 				});
+				
+				
+				/**
+				 * Report having no legal turn left: checkmate, or a draw if the
+				 * player was not under attack
+				 */
+				$subGroup->post('/finish', function (Request $request, Response $response, $args) {
+				    $body = $request->getParsedBody();
+				    
+				    $game = new Game($this->db);
+				    if (!$game->retrieve($args['id']) || ($game->Player1 != $body["UserId"] && $game->Player2 != $body["UserId"])) {
+				        return $this->unauthorized();
+				    }
+				    if ($game->Status != GameStatus::IN_PROGRESS->value) {
+				        return $this->ok(false);
+				    }
+				    // Only the player to move can be the one with nowhere to go
+				    if (($body["UserId"] == $game->Player1 && $game->ActivePlayer != 1)
+				        || ($body["UserId"] == $game->Player2 && $game->ActivePlayer != 2)) {
+				        return $this->badRequest();
+				    }
+				    
+				    $game->Status = GameStatus::FINISHED->value;
+				    $game->WinnerPlayer = $body["Drawn"] ? null : ($game->Player1 == $body["UserId"] ? 2 : 1);
+				    if (!$game->save()) {
+				        return $this->internalServerError();
+				    }
+				    
+				    return $this->ok(true);
+				})->add(new JsonValidationMiddleware($this->app, $this->db, Model::GAME_FINISH_REQUEST));
+				
+				
+				/**
+				 * Give up, handing the win to the other player
+				 */
+				$subGroup->post('/forfeit', function (Request $request, Response $response, $args) {
+				    $body = $request->getParsedBody();
+				    
+				    $game = new Game($this->db);
+				    if (!$game->retrieve($args['id']) || ($game->Player1 != $body["UserId"] && $game->Player2 != $body["UserId"])) {
+				        return $this->unauthorized();
+				    }
+				    if ($game->Status != GameStatus::IN_PROGRESS->value) {
+				        // Nothing left to give up on
+				        return $this->ok(false);
+				    }
+				    
+				    $game->Status = GameStatus::FORFEITED->value;
+				    $game->WinnerPlayer = $game->Player1 == $body["UserId"] ? 2 : 1;
+				    if (!$game->save()) {
+				        return $this->internalServerError();
+				    }
+				    
+				    return $this->ok(true);
+				})->add(new JsonValidationMiddleware($this->app, $this->db, Model::GAME_JOIN_REQUEST));
 			});
 		});
 	}

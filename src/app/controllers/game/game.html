@@ -11,57 +11,55 @@
 					<li class="nav-item">
 						<a class="nav-link" routerLink="/" title="Exit"><i class="fas fa-power-off"></i> Main menu</a>
 					</li>
-					<li class="nav-item">
-						<button type="button" class="nav-link" (click)="forfeit()" title="Forfeit"><i class="far fa-flag"></i> Forfeit</button>
-					</li>
+					@if (!isOver()) {
+						<li class="nav-item">
+							<button type="button" class="nav-link" (click)="forfeit()" title="Forfeit"><i class="far fa-flag"></i> Forfeit</button>
+						</li>
+					}
 				</ul>
 			</div>
 			<div class="d-flex">
 				<div class="nav-item">
-					<button type="button" class="nav-link" (click)="zoom -= 1" title="Zoom out" [disabled]="zoom == 1"><i class="fas fa-magnifying-glass-minus"></i></button>
+					<button type="button" class="nav-link" (click)="zoomBy(-1)" title="Zoom out" [disabled]="zoom == 1"><i class="fas fa-magnifying-glass-minus"></i></button>
 				</div>
 				<div class="nav-item">
-					<button type="button" class="nav-link" (click)="zoom += 1" title="Zoom in" [disabled]="zoom == 5"><i class="fas fa-magnifying-glass-plus"></i></button>
+					<button type="button" class="nav-link" (click)="zoomBy(1)" title="Zoom in" [disabled]="zoom == 5"><i class="fas fa-magnifying-glass-plus"></i></button>
 				</div>
 			</div>
 		</div>
 	</nav>
 </header>
 
+<app-piece-sprite />
+
 <main>
-	<table class="content" [ngClass]="'zoom-'+zoom">
-	@if (!!state) {
+	<div class="content" [ngClass]="'zoom-'+zoom">
+	<table class="grid" [style.paddingRight.px]="trailing.right" [style.paddingBottom.px]="trailing.bottom">
+	@if (!!view) {
 		<thead>
 		<tr>
 			<th></th>
-			@let timeSteps = [].constructor(grid.steps);
-			@for (step of timeSteps; track $index) {
-				<th [ngClass]="{ active: $index == grid.currentStep }" [style]="{ width: boardSize+'px' }">{{$index}}</th>
+			@for (column of view.columns; track $index) {
+				<th [ngClass]="{ active: $index == view.present }" [style]="{ width: boardSize+'px' }" class="text-center">{{$index}}</th>
 			}
 		</tr>
 		</thead>
 		<tbody>
-		@for (timeline of state.TimeLines; track $index) {
-			@let $timelineIndex = $index;
+		@for (row of view.rows; track row.index) {
 			<tr class="timeline">
-				<th>{{timeline.Index}}</th>
-				@if (!!timeline.Origin) {
-					@let timeSteps = [].constructor(timeline.Origin.Time);
-					@for (step of timeSteps; track $index) {
-						<td></td>
-					}
+				<th>{{row.index}}</th>
+				@for (cell of row.lead; track $index) {
+					<td></td>
 				}
-				@for (board of timeline.Boards; track $index) {
-					@let $boardIndex = $index;
-					<td [ngClass]="{ active: $index + (timeline.Origin?.Time || 0) == grid.currentStep }">
-						<div class="board" [ngClass]="($index + (timeline.Origin?.Time || 0))%2 == getUserColor() ? 'black' : 'white'">
-						@for (row of board.Squares; track $index) {
-							@let $parentIndex = $index;
-							<div class="">
-								@for (square of row; track $index) {
-									<div class="square" [ngClass]="getHighlight($timelineIndex, $boardIndex, $parentIndex, $index)" (click)="select($timelineIndex, $boardIndex, $parentIndex, $index)">
-										@if (square !== null) {
-											<i [ngClass]="getIcon(square, $index, $parentIndex)"></i>
+				@for (board of row.boards; track board.t) {
+					<td [ngClass]="{ active: board.t == view.present }" [attr.data-board]="board.square.l + ':' + board.t">
+						<div class="board" [ngClass]="board.border">
+						@for (boardRow of board.rows; track $index) {
+							<div>
+								@for (square of boardRow; track $index) {
+									<div class="square" [ngClass]="getHighlight(square.square)" (click)="select(square.square)">
+										@if (square.piece !== null) {
+											<svg class="piece"><use [attr.href]="getPieceIcon(square.piece!, square.square.x, square.square.y)" /></svg>
 										} @else {
 											&nbsp;
 										}
@@ -77,26 +75,80 @@
 		</tbody>
 	}
 	</table>
+	<svg class="arrows">
+		<defs>
+			<marker id="head-move" viewBox="0 0 10 10" refX="0" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto">
+				<path d="M0 0L10 5L0 10z" />
+			</marker>
+			<marker id="head-threat" viewBox="0 0 10 10" refX="0" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto">
+				<path d="M0 0L10 5L0 10z" />
+			</marker>
+		</defs>
+		@for (arrow of arrows; track $index) {
+			<line [attr.x1]="arrow.x1" [attr.y1]="arrow.y1" [attr.x2]="arrow.x2" [attr.y2]="arrow.y2"
+				[attr.class]="'arrow arrow-' + arrow.kind" [attr.marker-end]="'url(#head-' + arrow.kind + ')'" />
+		}
+	</svg>
+	</div>
 </main>
+
+@if (!!promotion) {
+	<div class="dialog-backdrop" (click)="cancelPromotion()"></div>
+	<div class="dialog" role="dialog" aria-label="Choose a piece">
+		<p>Promote to</p>
+		<ul>
+			@for (choice of promotion.choices; track choice) {
+				<li>
+					<button type="button" (click)="choosePromotion(choice)">
+						<svg class="piece"><use [attr.href]="getPieceIcon(choice, 0, 0)" /></svg>
+						<span>{{getName(choice)}}</span>
+					</button>
+				</li>
+			}
+		</ul>
+	</div>
+}
+
+@if (confirmingForfeit) {
+	<div class="dialog-backdrop" (click)="cancelForfeit()"></div>
+	<div class="dialog" role="dialog" aria-label="Give up">
+		<p>Give up this game?</p>
+		<ul>
+			<li><button type="button" (click)="confirmForfeit()"><i class="far fa-flag"></i><span>Give up</span></button></li>
+			<li><button type="button" (click)="cancelForfeit()"><i class="fas fa-ban"></i><span>Keep playing</span></button></li>
+		</ul>
+	</div>
+}
 
 <footer>
 	<nav class="navbar bg-dark text-light" aria-label="Actions">
 		<div class="container-fluid">
 			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
 				<li class="nav-item">
-					@if (isPlayerTurn()) {
-						<span>Your turn.</span>
+					@if (isOver()) {
+						<span>{{outcome()}}</span>
+					} @else if (isPlayerTurn()) {
+						@if (inCheck) {
+							<span class="text-warning"><i class="fas fa-triangle-exclamation"></i> Check. Your turn.</span>
+						} @else {
+							<span>Your turn.</span>
+						}
 					} @else {
 						<span>Waiting for other player.</span>
 					}
 				</li>
-				@if (isPlayerTurn()) {
-					@if (!!selectedSquare) {
+				@if (searching && isPlayerTurn() && !isOver()) {
+					<li class="nav-item">
+						<span class="text-info"><i class="fas fa-hourglass-half"></i> Still looking for checkmate...</span>
+					</li>
+				}
+				@if (isPlayerTurn() && !isOver()) {
+					@if (!!selected) {
 						<li class="nav-item">
 							<button type="button" class="nav-link" (click)="deselect()" title="Deselect"><i class="fas fa-ban"></i> Deselect</button>
 						</li>
 					}
-					@if (move.Pieces.length > 0) {
+					@if (hasPendingMoves()) {
 						<li class="nav-item">
 							<button type="button" class="nav-link" (click)="undo()" title="Undo"><i class="fas fa-undo"></i> Undo</button>
 						</li>

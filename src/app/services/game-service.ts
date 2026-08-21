@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { Game, GameStatus, Piece } from 'src/app/types/Game';
+import { Game, GameSummary } from 'src/app/types/Game';
 import { GameState, TimeLine, Board } from 'src/app/types/GameState';
 import { Move } from 'src/app/types/Move';
 import { HttpClient } from '@angular/common/http';
@@ -14,8 +14,8 @@ export class GameService {
 
 	private http = inject(HttpClient);
 
-	getGames(userId: string): Observable<Game> {
-		return this.http.get<Game>(`${this.url}?userId=${userId}`);
+	getGames(userId: string): Observable<GameSummary[]> {
+		return this.http.get<GameSummary[]>(`${this.url}?userId=${userId}`);
 	}
 
 	getGame(gameId: number, userId: string): Observable<Game> {
@@ -32,5 +32,14 @@ export class GameService {
 	
 	confirmMove(gameId: number, userId: string, move: Move): Observable<boolean> {
 		return this.http.put<boolean>(`${this.url}/${gameId}`, { UserId: userId, Move: move });
+	}
+
+	/** Reports that the player has no legal turn left. */
+	finish(gameId: number, userId: string, drawn: boolean): Observable<boolean> {
+		return this.http.post<boolean>(`${this.url}/${gameId}/finish`, { UserId: userId, Drawn: drawn });
+	}
+
+	forfeit(gameId: number, userId: string): Observable<boolean> {
+		return this.http.post<boolean>(`${this.url}/${gameId}/forfeit`, { UserId: userId });
 	}
 }

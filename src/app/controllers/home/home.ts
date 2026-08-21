@@ -6,6 +6,7 @@ import { GameService } from 'src/app/services/game-service';
 import { Router } from '@angular/router';
 import { LocalStorageService } from 'src/app/services/local-storage-service';
 import { Subscription } from 'rxjs';
+import { GameStatus, GameSummary } from 'src/app/types/Game';
 
 @Component({
 	selector: 'app-home',
@@ -21,6 +22,9 @@ export class Home implements OnInit, OnDestroy {
 	public mode: number | undefined;
 	public gameId: number | undefined;
 	public typeId: number | undefined;
+	/** Games still being played, soonest to act on first. */
+	public unfinished: GameSummary[] = [];
+	public record = { won: 0, lost: 0, drawn: 0 };
 
 	public MODE_NEW = 1;
 	public MODE_JOIN = 2;
@@ -94,6 +98,43 @@ export class Home implements OnInit, OnDestroy {
 			userId = this.localStorage.getItem('userId');
 		}
 		this.userId = userId !== null ? userId : undefined;
+		if (!!this.userId) {
+			this.loadGames(this.userId);
+		}
+	}
+
+	/** Whether it is the player's move in this game. */
+	public isYourTurn(game: GameSummary): boolean {
+		return game.Status == GameStatus.in_progress && game.ActivePlayer == 1;
+	}
+
+	public describe(game: GameSummary): string {
+		if (game.Waiting) { return 'Waiting for an opponent'; }
+		if (this.isYourTurn(game)) { return 'Your turn'; }
+		return 'Their turn';
+	}
+
+	public resume(gameId: number) {
+		this.router.navigateByUrl('/game/' + gameId);
+	}
+
+	private loadGames(userId: string) {
+		this.subscriptions.add(this.gameService.getGames(userId).subscribe(games => {
+			this.unfinished = games
+				.filter(game => game.Status == GameStatus.starting || game.Status == GameStatus.in_progress)
+				// Games needing the player's attention first, then the longest running
+				.sort((one, two) => (this.isYourTurn(two) ? 1 : 0) - (this.isYourTurn(one) ? 1 : 0)
+					|| two.Turns - one.Turns);
+			this.record = { won: 0, lost: 0, drawn: 0 };
+			for (const game of games) {
+				if (game.Status != GameStatus.finished && game.Status != GameStatus.forfeited) { continue; }
+				if (game.WinnerPlayer === null) { this.record.drawn++; }
+				else if (game.WinnerPlayer == 1) { this.record.won++; }
+				else { this.record.lost++; }
+			}
+		}, error => {
+			// TODO error handling
+		}));
 	}
 
 	ngOnDestroy(): void {

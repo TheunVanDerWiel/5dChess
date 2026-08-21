@@ -37,12 +37,12 @@ class Game extends Entity {
 	    // All player references are relative to the user (1 = self, 2 = opponent)
 	    return array(
 	        "Id"=> $this->Id,
-	        "StartingPlayer" => $userId == $this->Player1 ? $this->StartingPlayer : 2-$this->StartingPlayer,
+	        "StartingPlayer" => $userId == $this->Player1 ? $this->StartingPlayer : 3-$this->StartingPlayer,
 	        "StartingState"=> json_decode($this->StartingState),
-	        "ActivePlayer"=> $userId == $this->Player1 ? $this->ActivePlayer : 2-$this->ActivePlayer,
+	        "ActivePlayer"=> $userId == $this->Player1 ? $this->ActivePlayer : 3-$this->ActivePlayer,
 	        "Moves"=> json_decode($this->Moves),
 	        "Status"=> $this->Status,
-	        "WinnerPlayer"=> $userId == $this->Player1 ? $this->WinnerPlayer : 2-$this->WinnerPlayer
+	        "WinnerPlayer"=> $userId == $this->Player1 || $this->WinnerPlayer === null ? $this->WinnerPlayer : 3-$this->WinnerPlayer
 	    );
 	}
 }

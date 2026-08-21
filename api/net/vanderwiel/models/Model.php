@@ -7,6 +7,7 @@ enum Model {
     case GAME_ADD_REQUEST;
     case GAME_JOIN_REQUEST;
     case GAME_EDIT_REQUEST;
+    case GAME_FINISH_REQUEST;
     
     function getSchema() {
         return match($this) {
@@ -25,6 +26,14 @@ enum Model {
                 ],
                 "required" => [ "UserId" ]
             ],
+            self::GAME_FINISH_REQUEST => (object)[
+                "type" => "object",
+                "properties" => (object)[
+                    "UserId" => (object)[ "type" => "string", "length"=> 64 ],
+                    "Drawn" => (object)[ "type" => "boolean" ]
+                ],
+                "required" => [ "UserId", "Drawn" ]
+            ],
             self::GAME_EDIT_REQUEST => (object)[
                 "type" => "object",
                 "properties" => (object)[
@@ -37,22 +46,23 @@ enum Model {
                                 "properties" => (object)[
                                     "FromLocation" => (object)[ "type" => "object",
                                         "properties" => (object)[
-                                            "TimeLine" => (object)[ "type" => "integer" ],
-                                            "Board" => (object)[ "type" => "integer" ],
+                                            "Line" => (object)[ "type" => "integer" ],
+                                            "Time" => (object)[ "type" => "integer" ],
                                             "X" => (object)[ "type" => "integer" ],
                                             "Y" => (object)[ "type" => "integer" ]
                                         ],
-                                        "required"=> [ "TimeLine", "Board", "X", "Y" ]
+                                        "required"=> [ "Line", "Time", "X", "Y" ]
                                     ],
                                     "ToLocation" => (object)[ "type" => "object",
                                         "properties" => (object)[
-                                            "TimeLine" => (object)[ "type" => "integer" ],
-                                            "Board" => (object)[ "type" => "integer" ],
+                                            "Line" => (object)[ "type" => "integer" ],
+                                            "Time" => (object)[ "type" => "integer" ],
                                             "X" => (object)[ "type" => "integer" ],
                                             "Y" => (object)[ "type" => "integer" ]
                                         ],
-                                        "required"=> [ "TimeLine", "Board", "X", "Y" ]
-                                    ]
+                                        "required"=> [ "Line", "Time", "X", "Y" ]
+                                    ],
+                                    "Promotion" => (object)[ "type" => "integer" ]
                                 ],
                                 "required" => [ "FromLocation", "ToLocation" ]
                             ]

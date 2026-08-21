@@ -14,6 +14,55 @@ main {
 	overflow: auto;
 	
 	.content {
+		// Holds the boards and the arrows drawn over them in one coordinate space, so
+		// that zooming and scrolling carry both together.
+		position: relative;
+		width: max-content;
+		
+		.grid {
+			// Wide enough for every board, so the trailing padding is space past the
+			// last one rather than being swallowed by the table shrinking to fit.
+			width: max-content;
+			// Bootstrap collapses table borders, and a collapsed table has no padding
+			// of its own: the trailing space past the last board depends on having it
+			// back. The cells carry no borders, so nothing looks different for it.
+			border-collapse: separate;
+			border-spacing: 0;
+		}
+		
+		.arrows {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			pointer-events: none;
+			overflow: visible;
+			
+			.arrow {
+				fill: none;
+				stroke-width: 3;
+				stroke-linecap: round;
+			}
+			
+			.arrow-move {
+				stroke: #34C3EB;
+				opacity: 0.65;
+			}
+			
+			.arrow-threat {
+				stroke: #D93027;
+			}
+			
+			#head-move > path {
+				fill: #34C3EB;
+			}
+			
+			#head-threat > path {
+				fill: #D93027;
+			}
+		}
+		
 		&.zoom-1, &.zoom-2, &.zoom-3, &.zoom-4, &.zoom-5 {
 			transform-origin: top left;
 		}
@@ -81,6 +130,13 @@ main {
 			text-align: center;
 			position: relative;
 			
+			&>.piece {
+				width: 100%;
+				height: 100%;
+				fill: currentColor;
+				vertical-align: top;
+			}
+
 			&.border-selected:after {
 				content: ' ';
 				position: absolute;
@@ -94,11 +150,75 @@ main {
 				top: 0; left: 0; bottom: 0; right: 0;
 				background: radial-gradient(rgba(0,0,0,0), var(--bs-success));
 			}
+			
+			// Somewhere the other player could go, shown while waiting on them
+			&.border-preview:after {
+				content: ' ';
+				position: absolute;
+				top: 0; left: 0; bottom: 0; right: 0;
+				background: radial-gradient(rgba(0,0,0,0), var(--bs-warning));
+			}
 		}
 	}
 	
 	&>div:nth-child(2n)>div:nth-child(2n+1), &>div:nth-child(2n+1)>div:nth-child(2n) {
 		background-color: #000;
 		color: #fff;
+	}
+}
+
+.dialog-backdrop {
+	position: fixed;
+	top: 0; left: 0; bottom: 0; right: 0;
+	background-color: rgba(0, 0, 0, 0.5);
+	z-index: 10;
+}
+
+.dialog {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 11;
+	padding: 16px 24px;
+	background-color: var(--bs-dark);
+	color: var(--bs-light);
+	border-radius: 8px;
+
+	&>p {
+		margin: 0 0 8px;
+		text-align: center;
+	}
+
+	&>ul {
+		display: flex;
+		gap: 8px;
+		list-style: none;
+		margin: 0;
+		padding: 0;
+
+		&>li>button {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 4px;
+			min-width: 72px;
+			padding: 8px;
+			background: none;
+			border: 1px solid transparent;
+			border-radius: 4px;
+			color: inherit;
+			font-size: 12px;
+
+			&>.piece {
+				width: 24px;
+				height: 24px;
+				fill: currentColor;
+			}
+
+			&:hover, &:focus-visible {
+				border-color: var(--bs-info);
+			}
+		}
 	}
 }

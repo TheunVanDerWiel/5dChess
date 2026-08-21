@@ -13,5 +13,6 @@ export class Board {
 }
 
 export class TimeLineOrigin {
-	constructor(public Time: number, public Origin: number) {}
+	/** Time is the absolute time of the timeline's first board; Parent is the timeline it branched off. */
+	constructor(public Time: number, public Parent: number) {}
 }
