@@ -8,14 +8,14 @@
 		</div>
 		
 		@if (userId !== undefined) {
-			@if (typeof mode === 'undefined') {
+			@if (mode === null) {
 				@if (unfinished.length > 0) {
 					<h5 class="mb-2">Your games</h5>
 					<div class="row mb-4">
 						@for (game of unfinished; track game.Id) {
 							<div class="col-12 col-sm-6 col-md-4 col-lg-3 d-grid">
 								<button type="button" class="btn btn-outline-secondary btn-lg" (click)="resume(game.Id)">
-									<i class="fas fa-chess"></i> {{game.Id}}
+									<i class="fas fa-chess"></i> {{game.Id}} {{typeName(game.Type)}}
 									<small class="d-block" [ngClass]="{ 'text-warning': isYourTurn(game) }">{{describe(game)}}</small>
 								</button>
 							</div>
@@ -34,10 +34,10 @@
 
 			<div class="row mb-5">
 				<div class="col-12 col-sm-6 d-grid">
-					<button type="button" class="btn btn-outline-primary btn-lg" [ngClass]="{ active: mode === MODE_NEW }" (click)="mode = mode === MODE_NEW ? undefined : MODE_NEW"><i class="fas fa-rocket"></i> New game</button>
+					<button type="button" class="btn btn-outline-primary btn-lg" [ngClass]="{ active: mode === MODE_NEW }" (click)="mode = mode === MODE_NEW ? null : MODE_NEW"><i class="fas fa-rocket"></i> New game</button>
 				</div>
 				<div class="col-12 col-sm-6 d-grid">
-					<button type="button" class="btn btn-outline-primary btn-lg" [ngClass]="{ active: mode === MODE_JOIN }" (click)="mode = mode === MODE_JOIN ? undefined : MODE_JOIN"><i class="fas fa-door-open"></i> Join game</button>
+					<button type="button" class="btn btn-outline-primary btn-lg" [ngClass]="{ active: mode === MODE_JOIN }" (click)="mode = mode === MODE_JOIN ? null : MODE_JOIN"><i class="fas fa-door-open"></i> Join game</button>
 				</div>
 			</div>
 			

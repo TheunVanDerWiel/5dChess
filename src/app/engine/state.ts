@@ -83,6 +83,7 @@ export class State {
 	}
 
 	line(index: number): Timeline | null {
+		// TODO: indices are not contiguous. A game starting with two timelines has index -1 and 1 to maintain a balance in the number of branches per player. This means that ONLY index 0 can be missing when there are an even number of timelines.
 		// Indices are contiguous, so the array position follows from the minimum.
 		const position = index - this.minIndex;
 		if (position < 0 || position >= this.lines.length) { return null; }

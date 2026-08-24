@@ -133,7 +133,7 @@ export class Game implements OnInit, OnDestroy {
 
 	public isPlayerTurn(): boolean {
 		if (!this.game) { return false; }
-		return this.game.ActivePlayer == 1;
+		return this.game.ActivePlayer == 1 && this.game.Status == GameStatus.in_progress;
 	}
 
 	public hasPendingMoves(): boolean {
@@ -201,7 +201,8 @@ export class Game implements OnInit, OnDestroy {
 
 	public isMoveComplete(): boolean {
 		if (!this.state) { return false; }
-		return isTurnComplete(this.state, this.getUserColor());
+		var me = this.getUserColor();
+		return isTurnComplete(this.state, me) && !isAttacked(this.state, me, movableAfter(this.state, opponent(me)));
 	}
 
 	public confirm() {

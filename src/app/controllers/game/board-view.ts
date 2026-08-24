@@ -48,7 +48,7 @@ export function buildView(state: State, perspective: Color): BoardView {
 	// A player's own advance points up the screen, so black reads the multiverse
 	// from the negative side down and white from the positive side down.
 	const lines = state.timelines.slice()
-		.sort((a, b) => flip ? a.index - b.index : b.index - a.index);
+		.sort((a, b) => flip ? b.index - a.index : a.index - b.index);
 
 	let columns = 0;
 	const rows: ViewRow[] = lines.map(line => {

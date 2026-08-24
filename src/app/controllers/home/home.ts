@@ -19,7 +19,7 @@ import { GameStatus, GameSummary } from 'src/app/types/Game';
 })
 export class Home implements OnInit, OnDestroy {
 	public userId: string | undefined;
-	public mode: number | undefined;
+	public mode: number | null = null;
 	public gameId: number | undefined;
 	public typeId: number | undefined;
 	/** Games still being played, soonest to act on first. */
@@ -108,6 +108,18 @@ export class Home implements OnInit, OnDestroy {
 		return game.Status == GameStatus.in_progress && game.ActivePlayer == 1;
 	}
 
+	/**
+	 * The name of a variant, read off the same list the menu is built from. Leaves
+	 * are named after their group as well, because several of them share a name:
+	 * "Regular" alone does not say whether it is the standard board or the small one.
+	 */
+	public typeName(id: number): string {
+		var type = this.GAME_TYPES.find(candidate => candidate.id == id);
+		if (type === undefined) { return 'Unknown'; }
+		var group = this.GAME_TYPES.find(candidate => candidate.id == type!.parent);
+		return group === undefined ? type.name : group.name + ' ' + type.name;
+	}
+
 	public describe(game: GameSummary): string {
 		if (game.Waiting) { return 'Waiting for an opponent'; }
 		if (this.isYourTurn(game)) { return 'Your turn'; }
@@ -125,6 +137,7 @@ export class Home implements OnInit, OnDestroy {
 				// Games needing the player's attention first, then the longest running
 				.sort((one, two) => (this.isYourTurn(two) ? 1 : 0) - (this.isYourTurn(one) ? 1 : 0)
 					|| two.Turns - one.Turns);
+			this.mode = null;
 			this.record = { won: 0, lost: 0, drawn: 0 };
 			for (const game of games) {
 				if (game.Status != GameStatus.finished && game.Status != GameStatus.forfeited) { continue; }

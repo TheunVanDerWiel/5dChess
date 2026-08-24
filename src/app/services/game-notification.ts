@@ -13,7 +13,7 @@ import { environment } from 'src/environments/environment';
 })
 export class GameNotification {
 	/** How often to ask whether the opponent has moved, in milliseconds. */
-	private static readonly INTERVAL = 2000;
+	private static readonly INTERVAL = 3000;
 
 	private url = environment.apiBaseUrl + 'games';
 

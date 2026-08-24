@@ -5,10 +5,11 @@ use Net\VanDerWiel\Core\Entity;
 
 class Game extends Entity {
 	const TABLE = "game";
-	const FIELDS = array("player1", "player2", "starting_state", "starting_player", "moves", "active_player", "status", "winner_player");
+	const FIELDS = array("player1", "player2", "type", "starting_state", "starting_player", "moves", "active_player", "status", "winner_player");
 	
 	public $Player1;
 	public $Player2;
+	public $Type;
 	public $StartingState;
 	public $StartingPlayer;
 	public $Moves;
@@ -19,17 +20,18 @@ class Game extends Entity {
 	protected function getTable() { return Game::TABLE; }
 	protected function getFields() { return Game::FIELDS; }
 	protected function getDBData() {
-		return array($this->Player1, $this->Player2, $this->StartingState, $this->StartingPlayer, $this->Moves, $this->ActivePlayer, $this->Status, $this->WinnerPlayer);
+		return array($this->Player1, $this->Player2, $this->Type, $this->StartingState, $this->StartingPlayer, $this->Moves, $this->ActivePlayer, $this->Status, $this->WinnerPlayer);
 	}
 	public function fromData($data) {
 		$this->Player1 = $data[Game::FIELDS[0]];
 		$this->Player2 = $data[Game::FIELDS[1]];
-		$this->StartingState = $data[Game::FIELDS[2]];
-		$this->StartingPlayer = $data[Game::FIELDS[3]];
-		$this->Moves = $data[Game::FIELDS[4]];
-		$this->ActivePlayer = $data[Game::FIELDS[5]];
-		$this->Status = $data[Game::FIELDS[6]];
-		$this->WinnerPlayer = $data[Game::FIELDS[7]];
+		$this->Type = $data[Game::FIELDS[2]];
+		$this->StartingState = $data[Game::FIELDS[3]];
+		$this->StartingPlayer = $data[Game::FIELDS[4]];
+		$this->Moves = $data[Game::FIELDS[5]];
+		$this->ActivePlayer = $data[Game::FIELDS[6]];
+		$this->Status = $data[Game::FIELDS[7]];
+		$this->WinnerPlayer = $data[Game::FIELDS[8]];
 		return parent::fromData($data);
 	}
 	
@@ -38,6 +40,7 @@ class Game extends Entity {
 	    return array(
 	        "Id"=> $this->Id,
 	        "StartingPlayer" => $userId == $this->Player1 ? $this->StartingPlayer : 3-$this->StartingPlayer,
+	        "Type" => $this->Type,
 	        "StartingState"=> json_decode($this->StartingState),
 	        "ActivePlayer"=> $userId == $this->Player1 ? $this->ActivePlayer : 3-$this->ActivePlayer,
 	        "Moves"=> json_decode($this->Moves),
