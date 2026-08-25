@@ -83,11 +83,20 @@ export class State {
 	}
 
 	line(index: number): Timeline | null {
-		// TODO: indices are not contiguous. A game starting with two timelines has index -1 and 1 to maintain a balance in the number of branches per player. This means that ONLY index 0 can be missing when there are an even number of timelines.
-		// Indices are contiguous, so the array position follows from the minimum.
-		const position = index - this.minIndex;
+		// Indices are contiguous apart from 0, which is absent when the game opened on
+		// an even number of timelines: those start at -1 and 1 so that both players hold
+		// the same number of branches. Skipping the gap gives the array position, and
+		// the index is checked afterwards so a miss reads as absent rather than as a
+		// neighbour.
+		const position = index - this.minIndex - (this.hasGap() && index > 0 ? 1 : 0);
 		if (position < 0 || position >= this.lines.length) { return null; }
-		return this.lines[position];
+		const line = this.lines[position];
+		return line.index === index ? line : null;
+	}
+
+	/** Whether index 0 is missing, which is the only index that ever can be. */
+	private hasGap(): boolean {
+		return this.lines.length !== this.maxIndex - this.minIndex + 1;
 	}
 
 	board(l: number, t: number): Board | null {
