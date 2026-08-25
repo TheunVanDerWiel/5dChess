@@ -17,7 +17,7 @@ import { Verdict } from 'src/app/engine/checkmate';
 import { opponent } from 'src/app/engine/piece';
 import { pieceName, pieceSlug } from 'src/app/engine/piece';
 import { PieceSprite } from 'src/app/components/piece-sprite/piece-sprite';
-import { Arrow, BoardView, buildView } from './board-view';
+import { Arrow, BoardView, Origin, buildView } from './board-view';
 import { JudgeService } from 'src/app/services/judge-service';
 import { JudgeReply } from 'src/app/engine/judge.worker';
 
@@ -38,6 +38,8 @@ export class Game implements OnInit, OnDestroy {
 	private static readonly ZOOM_SCALE = [0.5, 0.75, 1, 1.5, 2];
 	/** Length of an arrow head, matching the markers in the template. */
 	private static readonly ARROW_HEAD = 12;
+	/** Length of the head on an origin curve, matching its marker in the template. */
+	private static readonly ORIGIN_HEAD = 10;
 
 
 	public showMenu = false;
@@ -64,6 +66,8 @@ export class Game implements OnInit, OnDestroy {
 	public trailing = { right: 0, bottom: 0 };
 	/** Lines drawn over the boards: journeys across boards, and threats to royals. */
 	public arrows: Arrow[] = [];
+	/** Curves drawn behind the boards, marking where each timeline was branched off. */
+	public origins: Origin[] = [];
 	/** Whether the selected piece is only being looked at, not moved. */
 	public previewing = false;
 	public userId: string | null = null;
@@ -402,7 +406,64 @@ export class Game implements OnInit, OnDestroy {
 		setTimeout(() => {
 			if (this.destroyed) { return; }
 			this.drawArrows();
+			this.drawOrigins();
 		});
+	}
+
+	/**
+	 * Works out the curves that say where each timeline came from: one from the board
+	 * a timeline was branched off to the first board of the timeline itself.
+	 *
+	 * They leave the parent board through the edge facing the new timeline and come
+	 * back in at its left hand side, so that a curve spends what it can of itself in
+	 * the space between boards. The rest passes behind them, which is what the
+	 * stylesheet puts these underneath the boards for: a branch made many timelines
+	 * away would otherwise be drawn across every board in between.
+	 */
+	private drawOrigins() {
+		this.origins = [];
+		if (!this.view) { return; }
+		var wrapper = document.querySelector('.content');
+		if (wrapper === null) { return; }
+		var pane = wrapper;
+		var base = pane.getBoundingClientRect();
+		var scale = Game.ZOOM_SCALE[this.zoom - 1];
+
+		var box = (l: number, t: number) => {
+			var board = pane.querySelector('[data-board="' + l + ':' + t + '"] > .board');
+			if (board === null) { return null; }
+			var rect = board.getBoundingClientRect();
+			return {
+				left: (rect.left - base.left) / scale,
+				right: (rect.right - base.left) / scale,
+				top: (rect.top - base.top) / scale,
+				bottom: (rect.bottom - base.top) / scale
+			};
+		};
+
+		for (const row of this.view.rows) {
+			if (row.origin === null || row.boards.length == 0) { continue; }
+			var from = box(row.origin.l, row.origin.t);
+			var to = box(row.index, row.boards[0].t);
+			if (from === null || to === null) { continue; }
+			var start = {
+				x: (from.left + from.right) / 2,
+				// Down towards the new timeline, which is drawn beyond every other one.
+				y: to.top > from.bottom ? from.bottom : from.top
+			};
+			// Short of the board by the length of the head, which is anchored by its
+			// base and points the way the curve is going: left to the board's edge,
+			// and the tip lands on it rather than behind it.
+			var end = { x: to.left - Game.ORIGIN_HEAD, y: (to.top + to.bottom) / 2 };
+			// Away from the parent board at a right angle, and back into the new one
+			// at a right angle, so the curve reads as leaving one and joining the other.
+			var reach = 0.65;
+			var c1 = { x: start.x, y: start.y + (end.y - start.y) * reach };
+			var c2 = { x: end.x - (end.x - start.x) * reach, y: end.y };
+			this.origins.push({
+				d: `M${start.x} ${start.y}C${c1.x} ${c1.y} ${c2.x} ${c2.y} ${end.x} ${end.y}`
+			});
+		}
 	}
 
 	/**

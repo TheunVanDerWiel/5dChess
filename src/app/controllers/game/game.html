@@ -34,6 +34,16 @@
 
 <main>
 	<div class="content" [ngClass]="'zoom-'+zoom">
+	<svg class="origins">
+		<defs>
+			<marker id="head-origin" viewBox="0 0 10 10" refX="0" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto">
+				<path d="M0 0L10 5L0 10z" />
+			</marker>
+		</defs>
+		@for (origin of origins; track $index) {
+			<path [attr.d]="origin.d" class="origin" marker-end="url(#head-origin)" />
+		}
+	</svg>
 	<table class="grid" [style.paddingRight.px]="trailing.right" [style.paddingBottom.px]="trailing.bottom">
 	@if (!!view) {
 		<thead>

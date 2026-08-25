@@ -24,7 +24,15 @@ export interface ViewRow {
 	index: number;
 	/** Placeholder cells for the turns before this timeline branched into existence. */
 	lead: null[];
+	/** The board this timeline was branched off, or null if it was there from the start. */
+	origin: { l: number, t: number } | null;
 	boards: ViewBoard[];
+}
+
+/** A curve drawn behind the boards, from a parent board to the timeline it began. */
+export interface Origin {
+	/** An SVG path, in the coordinates the boards are laid out in. */
+	d: string;
 }
 
 /** A line drawn over the boards, in the coordinates the boards are laid out in. */
@@ -56,6 +64,8 @@ export function buildView(state: State, perspective: Color): BoardView {
 		return {
 			index: line.index,
 			lead: new Array<null>(line.startT).fill(null),
+			// A timeline begins one half-move after the board it was branched off.
+			origin: line.parent === null ? null : { l: line.parent, t: line.startT - 1 },
 			boards: line.boards.map(board => ({
 				square: ref(line.index, board.t, 0, 0),
 				t: board.t,

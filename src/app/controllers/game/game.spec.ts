@@ -4,7 +4,7 @@ import { Observable, Subject, of, throwError } from 'rxjs';
 
 import { Game } from './game';
 import { Game as GameType, GameStatus, GameUpdate } from 'src/app/types/Game';
-import { Board, GameState, TimeLine } from 'src/app/types/GameState';
+import { Board, GameState, TimeLine, TimeLineOrigin } from 'src/app/types/GameState';
 import { GameService } from 'src/app/services/game-service';
 import { GameNotification } from 'src/app/services/game-notification';
 import { JudgeService } from 'src/app/services/judge-service';
@@ -29,6 +29,20 @@ function startingState(): GameState {
 	squares[0][0] = Piece.white_king;
 	squares[3][3] = Piece.black_king;
 	return new GameState([new TimeLine(0, [new Board(squares)], undefined)]);
+}
+
+/** A position where white has branched a second timeline off the first. */
+function branchedState(): GameState {
+	const first = emptyBoard(4);
+	first[0][0] = Piece.white_king;
+	first[3][3] = Piece.black_king;
+	const branch = emptyBoard(4);
+	branch[0][1] = Piece.white_king;
+	branch[3][3] = Piece.black_king;
+	return new GameState([
+		new TimeLine(0, [new Board(first), new Board(first)], undefined),
+		new TimeLine(1, [new Board(branch)], new TimeLineOrigin(1, 0))
+	]);
 }
 
 /** A back rank mate: the white king is cornered and the rooks have it covered. */
@@ -223,6 +237,18 @@ describe('Game', () => {
 		await settle();
 
 		expect(scrolls).toEqual([]);
+	});
+
+	it('marks where a timeline was branched off', async () => {
+		game.StartingState = branchedState();
+		component.ngOnInit();
+		fixture.detectChanges();
+		await settle();
+		await settle();
+
+		// One curve, for the branch: the timeline that was there from the start came
+		// from nowhere and is left unmarked.
+		expect(component.origins.length).toBe(1);
 	});
 
 	it('gives up when the server takes the forfeit', async () => {
