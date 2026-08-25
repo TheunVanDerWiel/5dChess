@@ -103,6 +103,37 @@ main {
 		.active {
 			background-color: #8BBEB2;
 		}
+		
+		.bg_white {
+			background-color: rgba(255,255,255,0.4);
+		}
+
+		.bg_black {
+			background-color: rgba(0,0,0,0.1);
+		}
+
+		// The timeline numbers stay against the left hand edge while the boards
+		// scroll past them, so a row can still be named once its first board has
+		// been left behind. They sit above the arrows, which run underneath.
+		th:first-child {
+			position: sticky;
+			left: 0;
+			z-index: 2;
+			min-width: 2em;
+			padding: 0 6px;
+			text-align: center;
+			// A backdrop of their own: the row tints are translucent, and what the
+			// boards scroll through would otherwise show behind the numbers.
+			background-color: #E6F9AF;
+		}
+
+		.bg_white>th:first-child {
+			background-image: linear-gradient(rgba(255,255,255,0.4), rgba(255,255,255,0.4));
+		}
+
+		.bg_black>th:first-child {
+			background-image: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1));
+		}
 	}
 }
 

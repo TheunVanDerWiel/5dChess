@@ -292,6 +292,7 @@ export class Game implements OnInit, OnDestroy {
 			|| update.ActivePlayer != this.game.ActivePlayer
 			|| update.WinnerPlayer != this.game.WinnerPlayer;
 		if (!changed) { return; }
+		var wasWaiting = !this.isPlayerTurn();
 		update.Moves.forEach(turn => {
 			applyTurn(this.state!, turn.Pieces.map(moveFromDto));
 			this.game!.Moves.push(turn);
@@ -302,6 +303,30 @@ export class Game implements OnInit, OnDestroy {
 		this.stopWatchingIfOver();
 		this.refresh();
 		this.scheduleAssessment();
+		// The turn coming back is what the player was waiting for, so the present is
+		// brought to them rather than leaving them to find where it has moved to.
+		if (wasWaiting && this.isPlayerTurn()) { this.scrollToPresent(); }
+	}
+
+	/**
+	 * Brings the boards of the present into view. Scheduled rather than done here,
+	 * because the boards it names have yet to be laid out.
+	 *
+	 * A player arriving at the board is put in the middle of the present at once,
+	 * since there is no journey across the multiverse to follow when they have not
+	 * seen any of it yet. Mid-game only the sideways position is chased, and
+	 * smoothly, so that whichever timelines they were reading stay where they are.
+	 */
+	private scrollToPresent(arriving = false) {
+		setTimeout(() => {
+			if (this.destroyed) { return; }
+			var board = document.querySelector('td.active');
+			board?.scrollIntoView({
+				block: arriving ? 'center' : 'nearest',
+				inline: 'center',
+				behavior: arriving ? 'auto' : 'smooth'
+			});
+		});
 	}
 
 	/**
@@ -323,6 +348,10 @@ export class Game implements OnInit, OnDestroy {
 			this.refresh();
 			this.measureTrailing();
 			this.scheduleAssessment();
+			// Where the game has got to is what the player came back for, so it opens
+			// on the present rather than at the far corner of the multiverse. Without
+			// a smooth scroll: there is no journey to follow on a board just arrived at.
+			this.scrollToPresent(true);
 
 			// Start polling for the opponent's turns, unless the game is already over.
 			if (!this.isOver()) {

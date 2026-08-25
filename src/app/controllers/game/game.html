@@ -46,7 +46,7 @@
 		</thead>
 		<tbody>
 		@for (row of view.rows; track row.index) {
-			<tr class="timeline">
+			<tr class="timeline" [ngClass]="{ 'bg_white': row.index > 0, 'bg_black': row.index < 0 }">
 				<th>{{row.index}}</th>
 				@for (cell of row.lead; track $index) {
 					<td></td>

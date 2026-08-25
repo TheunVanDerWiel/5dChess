@@ -83,8 +83,15 @@ describe('Game', () => {
 	let notifications: NotificationStub;
 	let game: GameType;
 	let games: { getGame: () => Observable<GameType>, forfeit: () => Observable<boolean> };
+	let scrolls: (boolean | ScrollIntoViewOptions | undefined)[];
 
 	beforeEach(async () => {
+		// Nothing is laid out here, so the browser's own scrolling is stood in for
+		// and the calls recorded: what can be told apart is what was asked for.
+		scrolls = [];
+		Element.prototype.scrollIntoView = function (options?: boolean | ScrollIntoViewOptions) {
+			scrolls.push(options);
+		};
 		judge = new JudgeStub();
 		notifications = new NotificationStub();
 		game = new GameType(3, 1, 1, startingState(), 1, [], GameStatus.in_progress, null);
@@ -177,6 +184,45 @@ describe('Game', () => {
 		await settle();
 
 		expect(component.arrows.some(arrow => arrow.kind === 'threat')).toBe(true);
+	});
+
+	it('opens on the present when the game is loaded', async () => {
+		component.ngOnInit();
+		fixture.detectChanges();
+		await settle();
+
+		// Straight there, and in the middle: there is no journey to follow across a
+		// multiverse the player has not seen yet.
+		expect(scrolls).toContainEqual({ block: 'center', inline: 'center', behavior: 'auto' });
+	});
+
+	it('brings the present into view when the turn comes back', async () => {
+		game.ActivePlayer = 2;
+		component.ngOnInit();
+		fixture.detectChanges();
+		await settle();
+		scrolls = [];
+
+		notifications.updates.next(new GameUpdate([], GameStatus.in_progress, 1, null));
+		fixture.detectChanges();
+		await settle();
+
+		// Sideways only, so the timelines being read stay where they are.
+		expect(scrolls).toContainEqual({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+	});
+
+	it('stays put when a poll brings no news', async () => {
+		game.ActivePlayer = 2;
+		component.ngOnInit();
+		fixture.detectChanges();
+		await settle();
+		scrolls = [];
+
+		notifications.updates.next(new GameUpdate([], game.Status, 2, null));
+		fixture.detectChanges();
+		await settle();
+
+		expect(scrolls).toEqual([]);
 	});
 
 	it('gives up when the server takes the forfeit', async () => {
