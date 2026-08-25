@@ -49,6 +49,8 @@ export class Game implements OnInit, OnDestroy {
 	public promotion: { move: EngineMove, choices: Piece[] } | null = null;
 	/** Set while the player is being asked whether they really mean to give up. */
 	public confirmingForfeit = false;
+	/** Set when something the player asked for did not reach the game, or null. */
+	public error: string | null = null;
 	/** Whether one of the player's royals could be taken if they left things as they are. */
 	public inCheck = false;
 	/** Whether the engine is still working out if a turn exists at all. */
@@ -222,7 +224,7 @@ export class Game implements OnInit, OnDestroy {
 			this.applied = [];
 			this.refresh();
 		}, error => {
-			// TODO error handling
+			this.reportFailure();
 		}));
 	}
 
@@ -248,12 +250,19 @@ export class Game implements OnInit, OnDestroy {
 		if (!this.game || !this.userId) { return; }
 		this.subscriptions.add(this.gameService.forfeit(this.game.Id, this.userId).subscribe(success => {
 			if (!this.game) { return; }
+			// A refusal reads as an answer rather than as a failure: the game was not
+			// one that could be given up on, so the board here is out of date.
+			if (!success) { return this.reportFailure(); }
 			this.game.Status = GameStatus.forfeited;
 			this.game.WinnerPlayer = 2;
 			this.stopWatchingIfOver();
 		}, error => {
-			// TODO error handling
+			this.reportFailure();
 		}));
+	}
+
+	public dismissError() {
+		this.error = null;
 	}
 
 	public isOver(): boolean {
@@ -536,12 +545,24 @@ export class Game implements OnInit, OnDestroy {
 		if (!this.game || !this.userId) { return; }
 		this.subscriptions.add(this.gameService.finish(this.game.Id, this.userId, drawn).subscribe(success => {
 			if (!this.game) { return; }
+			// The game had already ended by the time the search caught up, so what is
+			// on screen is not the game as it stands.
+			if (!success) { return this.reportFailure(); }
 			this.game.Status = GameStatus.finished;
 			this.game.WinnerPlayer = drawn ? null : 2;
 			this.stopWatchingIfOver();
 		}, error => {
-			// TODO error handling
+			this.reportFailure();
 		}));
+	}
+
+	/**
+	 * Says that the game did not take what it was sent. Nothing here can put that
+	 * right: the board on screen has moved on from the game the server is keeping,
+	 * so the only way forward is to fetch it again.
+	 */
+	private reportFailure() {
+		this.error = 'An error occurred. Refresh the page and try again.';
 	}
 
 	/**

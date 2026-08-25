@@ -109,6 +109,16 @@
 	</div>
 }
 
+@if (error !== null) {
+	<div class="dialog-backdrop" (click)="dismissError()"></div>
+	<div class="dialog" role="alertdialog" aria-label="Error">
+		<p>{{error}}</p>
+		<ul>
+			<li><button type="button" (click)="dismissError()"><i class="fas fa-ban"></i><span>Close</span></button></li>
+		</ul>
+	</div>
+}
+
 @if (confirmingForfeit) {
 	<div class="dialog-backdrop" (click)="cancelForfeit()"></div>
 	<div class="dialog" role="dialog" aria-label="Give up">

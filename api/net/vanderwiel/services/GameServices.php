@@ -299,7 +299,12 @@ class GameServices extends BaseMiddleware {
 				    if (!$game->retrieve($args['id']) || ($game->Player1 != $body["UserId"] && $game->Player2 != $body["UserId"])) {
 				        return $this->unauthorized();
 				    }
-				    if ($game->Status != GameStatus::IN_PROGRESS->value) {
+				    if ($game->Status == GameStatus::STARTING->value) {
+				        if (!$game->delete()) {
+				            return $this->internalServerError();
+				        }
+				        return $this->ok(true);
+				    } else if ($game->Status != GameStatus::IN_PROGRESS->value) {
 				        // Nothing left to give up on
 				        return $this->ok(false);
 				    }

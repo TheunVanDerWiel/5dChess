@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
-import { Observable, Subject, of } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 
 import { Game } from './game';
 import { Game as GameType, GameStatus, GameUpdate } from 'src/app/types/Game';
@@ -82,18 +82,20 @@ describe('Game', () => {
 	let judge: JudgeStub;
 	let notifications: NotificationStub;
 	let game: GameType;
+	let games: { getGame: () => Observable<GameType>, forfeit: () => Observable<boolean> };
 
 	beforeEach(async () => {
 		judge = new JudgeStub();
 		notifications = new NotificationStub();
 		game = new GameType(3, 1, 1, startingState(), 1, [], GameStatus.in_progress, null);
+		games = { getGame: () => of(game), forfeit: () => of(true) };
 
 		await TestBed.configureTestingModule({
 			imports: [Game],
 			providers: [
 				{ provide: ActivatedRoute, useValue: { params: of({ gameId: 3 }) } },
 				provideRouter([]),
-				{ provide: GameService, useValue: { getGame: () => of(game) } },
+				{ provide: GameService, useValue: games },
 				{ provide: GameNotification, useValue: notifications },
 				{ provide: JudgeService, useValue: judge },
 				{ provide: LocalStorageService, useValue: { getItem: () => 'player-one', setItem: () => {} } },
@@ -175,6 +177,43 @@ describe('Game', () => {
 		await settle();
 
 		expect(component.arrows.some(arrow => arrow.kind === 'threat')).toBe(true);
+	});
+
+	it('gives up when the server takes the forfeit', async () => {
+		component.ngOnInit();
+		await settle();
+
+		component.confirmForfeit();
+		await settle();
+
+		expect(component.game?.Status).toBe(GameStatus.forfeited);
+		expect(component.error).toBeNull();
+	});
+
+	it('reports a forfeit the server would not take', async () => {
+		// A game that was never in progress cannot be given up on, and the answer
+		// says so rather than failing outright.
+		games.forfeit = () => of(false);
+		component.ngOnInit();
+		await settle();
+
+		component.confirmForfeit();
+		await settle();
+
+		expect(component.game?.Status).toBe(GameStatus.in_progress);
+		expect(component.error).toBe('An error occurred. Refresh the page and try again.');
+	});
+
+	it('reports a forfeit that never reached the server', async () => {
+		games.forfeit = () => throwError(() => new Error('offline'));
+		component.ngOnInit();
+		await settle();
+
+		component.confirmForfeit();
+		await settle();
+
+		expect(component.game?.Status).toBe(GameStatus.in_progress);
+		expect(component.error).toBe('An error occurred. Refresh the page and try again.');
 	});
 
 	it('never watches a game that was already over when it was opened', async () => {
