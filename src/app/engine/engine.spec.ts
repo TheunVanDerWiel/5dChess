@@ -131,11 +131,16 @@ describe('a game that opened on an even number of timelines', () => {
 		expect(found.some(to => to.l === 1 && to.x === 1 && to.y === 1)).toBe(true);
 	});
 
-	it('advances a pawn across to the next timeline', () => {
+	it('advances a pawn across to the timeline beside it', () => {
 		const state = evenState(3);
-		state.set(ref(-1, 0, 1, 1), Piece.white_pawn);
-		const found = targets(state, ref(-1, 0, 1, 1));
-		expect(found.some(to => to.l === 1 && to.x === 1 && to.y === 1)).toBe(true);
+		// A pawn's advance across the multiverse matches its advance up the board, so
+		// white travels toward the lower index and black toward the higher one.
+		state.set(ref(1, 0, 1, 1), Piece.white_pawn);
+		state.set(ref(-1, 0, 0, 0), Piece.black_pawn);
+		expect(targets(state, ref(1, 0, 1, 1))
+			.some(to => to.l === -1 && to.x === 1 && to.y === 1)).toBe(true);
+		expect(targets(state, ref(-1, 0, 0, 0))
+			.some(to => to.l === 1 && to.x === 0 && to.y === 0)).toBe(true);
 	});
 
 	it('lands a knight two files over on the next timeline', () => {
@@ -277,7 +282,8 @@ describe('en passant', () => {
 
 	it('refuses to double step across timelines', () => {
 		const size = 8;
-		const state = new State(size, [0, 1, 2].map(index => ({
+		// Two timelines on white's advancing side, which is the negative one.
+		const state = new State(size, [-2, -1, 0].map(index => ({
 			index,
 			startT: 0,
 			parent: index === 0 ? null : 0,
@@ -288,8 +294,8 @@ describe('en passant', () => {
 		const found = targets(state, ref(0, 0, 6, 4));
 		// One timeline over is a normal advance; two would skip a square on a board
 		// the pawn never touches, which no capture could then reach.
-		expect(found.some(t => t.l === 1 && t.t === 0)).toBe(true);
-		expect(found.some(t => t.l === 2)).toBe(false);
+		expect(found.some(t => t.l === -1 && t.t === 0)).toBe(true);
+		expect(found.some(t => t.l === -2)).toBe(false);
 	});
 });
 

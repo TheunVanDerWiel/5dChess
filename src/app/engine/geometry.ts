@@ -13,10 +13,12 @@ export const TIME_STEP = 2;
 const AXIS_STEP: readonly number[] = [1, TIME_STEP, 1, 1];
 
 /**
- * White advances toward higher timeline indices, mirroring its spatial advance:
- * both point "up" on a board rendered from white's perspective.
+ * White advances toward lower timeline indices, mirroring its spatial advance: both
+ * point "up" the screen from white's perspective, where the multiverse is read from
+ * the negative side down. Note that this is away from the side white branches to,
+ * which is the positive one.
  */
-const WHITE_LINE_ADVANCE = 1;
+const WHITE_LINE_ADVANCE = -1;
 
 /** White starts on the high ranks and advances toward rank 0. */
 const WHITE_RANK_ADVANCE = -1;
