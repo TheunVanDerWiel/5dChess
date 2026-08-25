@@ -23,6 +23,28 @@ function blankState(size: number, boards = 1): State {
 	return new State(size, [line]);
 }
 
+/** Timelines at the given indices, each holding `count` boards from `startT`. */
+function timelines(size: number, lines: { index: number, startT: number, count: number }[]): State {
+	return new State(size, lines.map(line => {
+		const timeline: Timeline = { index: line.index, startT: line.startT, parent: null, boards: [] };
+		for (let i = 0; i < line.count; i++) {
+			timeline.boards.push({
+				t: line.startT + i,
+				squares: new Int16Array(size * size).fill(EMPTY)
+			});
+		}
+		return timeline;
+	}));
+}
+
+/** The two timelines an even number of starting timelines gives: -1 and 1, no 0. */
+function evenState(size: number): State {
+	return timelines(size, [
+		{ index: -1, startT: 0, count: 1 },
+		{ index: 1, startT: 0, count: 1 }
+	]);
+}
+
 describe('geometry', () => {
 	it('covers every combination of axes and signs', () => {
 		expect(SLIDING[0].length).toBe(8);   // rook
@@ -89,6 +111,54 @@ describe('a missing board blocks a ray', () => {
 		expect(found.some(t => t.l === 0 && t.t === 0 && t.x === 1 && t.y === 1)).toBe(true);
 		// t = 4 does not exist, so the forward direction is blocked rather than empty.
 		expect(found.some(t => t.t === 4)).toBe(false);
+	});
+});
+
+describe('a game that opened on an even number of timelines', () => {
+	// There is no index 0 for a piece to pass through, so -1 and 1 are neighbours
+	// and everything crossing between them travels a single step.
+	it('slides a rook onto the timeline beside it', () => {
+		const state = evenState(3);
+		state.set(ref(-1, 0, 1, 1), Piece.white_rook);
+		const found = targets(state, ref(-1, 0, 1, 1));
+		expect(found.some(to => to.l === 1 && to.x === 1 && to.y === 1)).toBe(true);
+	});
+
+	it('steps a king across, one timeline and not two', () => {
+		const state = evenState(3);
+		state.set(ref(-1, 0, 1, 1), Piece.white_king);
+		const found = targets(state, ref(-1, 0, 1, 1));
+		expect(found.some(to => to.l === 1 && to.x === 1 && to.y === 1)).toBe(true);
+	});
+
+	it('advances a pawn across to the next timeline', () => {
+		const state = evenState(3);
+		state.set(ref(-1, 0, 1, 1), Piece.white_pawn);
+		const found = targets(state, ref(-1, 0, 1, 1));
+		expect(found.some(to => to.l === 1 && to.x === 1 && to.y === 1)).toBe(true);
+	});
+
+	it('lands a knight two files over on the next timeline', () => {
+		const state = evenState(5);
+		state.set(ref(-1, 0, 2, 2), Piece.white_knight);
+		const found = targets(state, ref(-1, 0, 2, 2));
+		expect(found.some(to => to.l === 1 && to.x === 4 && to.y === 2)).toBe(true);
+	});
+
+	it('never offers the timeline that is not there', () => {
+		const state = evenState(3);
+		state.set(ref(-1, 0, 1, 1), Piece.white_queen);
+		expect(targets(state, ref(-1, 0, 1, 1)).every(to => to.l === -1 || to.l === 1)).toBe(true);
+	});
+
+	it('is still stopped by a timeline with no board at that time', () => {
+		// Counting timelines is not licence to pass through one that has not started.
+		const state = timelines(3, [
+			{ index: -1, startT: 0, count: 1 },
+			{ index: 1, startT: 2, count: 1 }
+		]);
+		state.set(ref(-1, 0, 1, 1), Piece.white_rook);
+		expect(targets(state, ref(-1, 0, 1, 1)).some(to => to.l === 1)).toBe(false);
 	});
 });
 

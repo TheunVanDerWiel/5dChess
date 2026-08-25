@@ -26,8 +26,12 @@ export function targets(state: State, from: Ref): Ref[] {
 		}
 		for (const direction of rule.directions) {
 			for (let distance = 1; limit === 0 || distance <= limit; distance++) {
+				// Steps along the timeline axis are counted in timelines, so a ray that
+				// runs past the outermost one has nowhere further to go.
+				const l = state.offsetLine(from.l, direction[0] * distance);
+				if (l === null) { break; }
 				const to = ref(
-					from.l + direction[0] * distance,
+					l,
 					from.t + direction[1] * distance,
 					from.x + direction[2] * distance,
 					from.y + direction[3] * distance
@@ -72,7 +76,7 @@ function enPassantTargets(state: State, from: Ref, piece: number): Ref[] {
 		const victim = state.at(record.victim);
 		if (victim === EMPTY || Piece.color(victim) === color) { return false; }
 		return captures.directions.some(direction =>
-			from.l + direction[0] === record.target.l
+			state.offsetLine(from.l, direction[0]) === record.target.l
 			&& from.t + direction[1] === record.target.t
 			&& from.x + direction[2] === record.target.x
 			&& from.y + direction[3] === record.target.y);

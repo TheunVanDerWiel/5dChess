@@ -83,6 +83,27 @@ export class State {
 	}
 
 	line(index: number): Timeline | null {
+		const position = this.position(index);
+		return position === null ? null : this.lines[position];
+	}
+
+	/**
+	 * The timeline `steps` away from `index`, or null when the count runs off the end.
+	 * Timelines are counted rather than subtracted, because an index says where a
+	 * timeline belongs and not how far away it is: a game opening on an even number of
+	 * timelines has no index 0, so -1 and 1 are neighbours two indices apart. This is
+	 * how far anything moves along the timeline axis.
+	 */
+	offsetLine(index: number, steps: number): number | null {
+		const position = this.position(index);
+		if (position === null) { return null; }
+		const target = position + steps;
+		if (target < 0 || target >= this.lines.length) { return null; }
+		return this.lines[target].index;
+	}
+
+	/** Where a timeline sits in `lines`, or null when there is no such timeline. */
+	private position(index: number): number | null {
 		// Indices are contiguous apart from 0, which is absent when the game opened on
 		// an even number of timelines: those start at -1 and 1 so that both players hold
 		// the same number of branches. Skipping the gap gives the array position, and
@@ -90,8 +111,7 @@ export class State {
 		// neighbour.
 		const position = index - this.minIndex - (this.hasGap() && index > 0 ? 1 : 0);
 		if (position < 0 || position >= this.lines.length) { return null; }
-		const line = this.lines[position];
-		return line.index === index ? line : null;
+		return this.lines[position].index === index ? position : null;
 	}
 
 	/** Whether index 0 is missing, which is the only index that ever can be. */

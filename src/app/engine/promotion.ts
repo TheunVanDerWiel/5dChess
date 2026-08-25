@@ -34,8 +34,7 @@ export function promotes(state: State, piece: number, to: Ref): boolean {
 /**
  * The types a pawn may promote to, read off the position the game was set up with,
  * so that each variant offers its own pieces and nothing else. Pawns are excluded
- * because promoting to one is pointless, and royals because a second king is not a
- * piece the rules provide for.
+ * because promoting to one is pointless.
  */
 export function promotionChoices(start: State, color: Color): Piece[] {
 	const present = new Set<number>();
@@ -47,5 +46,9 @@ export function promotionChoices(start: State, color: Color): Piece[] {
 			}
 		}
 	}
-	return CHOICE_ORDER.filter(type => present.has(type));
+	var options = CHOICE_ORDER.filter(type => present.has(type));
+	if (options.length == 0) {
+		options = [Piece.black_queen];
+	}
+	return options;
 }

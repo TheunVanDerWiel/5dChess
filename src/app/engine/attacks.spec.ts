@@ -118,6 +118,41 @@ describe('attacks across timelines', () => {
 	});
 });
 
+describe('attacks when there is no timeline 0', () => {
+	/** Timelines at the given indices, one board each at time 0. */
+	function evenBoards(size: number, indices: number[]): State {
+		return new State(size, indices.map(index => ({
+			index,
+			startT: 0,
+			parent: null,
+			boards: [{ t: 0, squares: new Int16Array(size * size).fill(EMPTY) }]
+		})));
+	}
+
+	it('reaches the timeline on the other side of the missing index', () => {
+		const state = evenBoards(8, [-1, 1]);
+		state.set(ref(-1, 0, 0, 4), Piece.black_king);
+		state.set(ref(1, 0, 0, 4), Piece.white_rook);
+		expect(isAttacked(state, Color.black, movableBy(state, Color.white))).toBe(true);
+	});
+
+	it('reports the timelines a ray crossed, skipping the one that is not there', () => {
+		const state = evenBoards(8, [-2, -1, 1, 2]);
+		state.set(ref(-2, 0, 0, 4), Piece.black_king);
+		state.set(ref(2, 0, 0, 4), Piece.white_rook);
+		const attacks = attacksOn(state, Color.black, movableBy(state, Color.white));
+		expect(attacks.length).toBe(1);
+		expect(attacks[0].path.map(square => square.l)).toEqual([-1, 1]);
+	});
+
+	it('sees a knight bound across to the next timeline', () => {
+		const state = evenBoards(8, [-1, 1]);
+		state.set(ref(-1, 0, 4, 4), Piece.black_king);
+		state.set(ref(1, 0, 6, 4), Piece.white_knight);
+		expect(isAttacked(state, Color.black, movableBy(state, Color.white))).toBe(true);
+	});
+});
+
 describe('pieces that arrive in one bound', () => {
 	it('sees a knight', () => {
 		const state = oneLine(8);

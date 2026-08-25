@@ -123,7 +123,12 @@ function sliding(state: State, royal: Ref, attacker: Color, view: Perspective,
 			const direction = directions[index];
 			let l = royal.l, t = royal.t, x = royal.x, y = royal.y;
 			for (let distance = 1; ; distance++) {
-				l += direction[0];
+				if (direction[0] !== 0) {
+					// Only asked for when the ray moves across timelines, which most do not.
+					const next = state.offsetLine(l, direction[0]);
+					if (next === null) { break; }
+					l = next;
+				}
 				t += direction[1];
 				x += direction[2];
 				y += direction[3];
@@ -135,7 +140,7 @@ function sliding(state: State, royal: Ref, attacker: Color, view: Perspective,
 				if (Piece.color(occupant) === attacker
 					&& reaches(occupant, family, distance)
 					&& view.source(l, t)) {
-					found.push({ from: ref(l, t, x, y), to: royal, path: trail(royal, direction, distance) });
+					found.push({ from: ref(l, t, x, y), to: royal, path: trail(state, royal, direction, distance) });
 					any = true;
 					if (first) { return true; }
 				}
@@ -147,10 +152,12 @@ function sliding(state: State, royal: Ref, attacker: Color, view: Perspective,
 }
 
 /** The empty squares a ray crossed before it hit something. */
-function trail(royal: Ref, direction: Direction, distance: number): Ref[] {
+function trail(state: State, royal: Ref, direction: Direction, distance: number): Ref[] {
 	const path: Ref[] = [];
 	for (let step = 1; step < distance; step++) {
-		path.push(along(royal, direction, step));
+		const square = along(state, royal, direction, step);
+		// The ray already reached the far end, so every square along it exists.
+		if (square !== null) { path.push(square); }
 	}
 	return path;
 }
@@ -162,7 +169,9 @@ function stepping(state: State, royal: Ref, attacker: Color, view: Perspective,
 
 	for (let index = 0; index < KNIGHT_OFFSETS.length; index++) {
 		const offset = KNIGHT_OFFSETS[index];
-		const l = royal.l + offset[0], t = royal.t + offset[1];
+		const l = state.offsetLine(royal.l, offset[0]);
+		if (l === null) { continue; }
+		const t = royal.t + offset[1];
 		const x = royal.x + offset[2], y = royal.y + offset[3];
 		const occupant = at(state, l, t, x, y);
 		if (occupant !== EMPTY
@@ -180,7 +189,9 @@ function stepping(state: State, royal: Ref, attacker: Color, view: Perspective,
 	for (const type of [Piece.black_pawn, Piece.black_brawn]) {
 		const piece = Piece.of(type, attacker);
 		for (const direction of captures(piece)) {
-			const l = royal.l - direction[0], t = royal.t - direction[1];
+			const l = state.offsetLine(royal.l, -direction[0]);
+			if (l === null) { continue; }
+			const t = royal.t - direction[1];
 			const x = royal.x - direction[2], y = royal.y - direction[3];
 			if (at(state, l, t, x, y) === piece && view.source(l, t)) {
 				found.push({ from: ref(l, t, x, y), to: royal, path: [] });
@@ -192,9 +203,11 @@ function stepping(state: State, royal: Ref, attacker: Color, view: Perspective,
 	return any;
 }
 
-function along(from: Ref, direction: Direction, distance: number): Ref {
+function along(state: State, from: Ref, direction: Direction, distance: number): Ref | null {
+	const l = state.offsetLine(from.l, direction[0] * distance);
+	if (l === null) { return null; }
 	return ref(
-		from.l + direction[0] * distance,
+		l,
 		from.t + direction[1] * distance,
 		from.x + direction[2] * distance,
 		from.y + direction[3] * distance);
