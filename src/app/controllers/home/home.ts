@@ -1,7 +1,6 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { UserService } from 'src/app/services/user-service';
 import { GameService } from 'src/app/services/game-service';
 import { Router } from '@angular/router';
 import { LocalStorageService } from 'src/app/services/local-storage-service';
@@ -18,14 +17,8 @@ import { GameStatus, GameSummary } from 'src/app/types/Game';
 	styleUrl: './home.less',
 })
 export class Home implements OnInit, OnDestroy {
-	public userId: string | undefined;
-	public mode: number | null = null;
-	public gameId: number | undefined;
-	public typeId: number | undefined;
-	/** Games still being played, soonest to act on first. */
-	public unfinished: GameSummary[] = [];
-	public record = { won: 0, lost: 0, drawn: 0 };
 
+	public MODE_OVERVIEW = 0;
 	public MODE_NEW = 1;
 	public MODE_JOIN = 2;
 	public GAME_TYPES = [
@@ -79,11 +72,18 @@ export class Home implements OnInit, OnDestroy {
 		{ id: 78, parent: 7, name: 'Brawns' }
 	];
 	
+	public userId: string | undefined;
+	public mode: number = this.MODE_OVERVIEW;
+	public gameId: number | undefined;
+	public typeId: number | undefined;
+	/** Games still being played, soonest to act on first. */
+	public unfinished: GameSummary[] = [];
+	public record = { won: 0, lost: 0, drawn: 0 };
+	
 	private subscriptions = new Subscription();
 	
 	private router = inject(Router);
 	private localStorage = inject(LocalStorageService);
-	private userService = inject(UserService);
 	private gameService = inject(GameService);
 
 	ngOnInit(): void {
@@ -137,7 +137,6 @@ export class Home implements OnInit, OnDestroy {
 				// Games needing the player's attention first, then the longest running
 				.sort((one, two) => (this.isYourTurn(two) ? 1 : 0) - (this.isYourTurn(one) ? 1 : 0)
 					|| two.Turns - one.Turns);
-			this.mode = null;
 			this.record = { won: 0, lost: 0, drawn: 0 };
 			for (const game of games) {
 				if (game.Status != GameStatus.finished && game.Status != GameStatus.forfeited) { continue; }
@@ -145,8 +144,6 @@ export class Home implements OnInit, OnDestroy {
 				else if (game.WinnerPlayer == 1) { this.record.won++; }
 				else { this.record.lost++; }
 			}
-		}, error => {
-			// TODO error handling
 		}));
 	}
 

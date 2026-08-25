@@ -36,6 +36,7 @@
               "src/styles.less"
             ],
             "polyfills": [
+              "zone.js",
               "@angular/localize/init"
             ]
           },

@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import { Game, GameSummary } from 'src/app/types/Game';
-import { GameState, TimeLine, Board } from 'src/app/types/GameState';
 import { Move } from 'src/app/types/Move';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef, HostListener } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, HostListener } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
@@ -83,7 +83,6 @@ export class Game implements OnInit, OnDestroy {
 	private moveService = inject(GameNotification);
 	private judgeService = inject(JudgeService);
 	private localStorage = inject(LocalStorageService);
-	private changeDetector = inject(ChangeDetectorRef);
 
 	ngOnInit(): void {
 		// Check if user is a player of the game
@@ -160,7 +159,6 @@ export class Game implements OnInit, OnDestroy {
 
 		this.zoom = next;
 		this.measureTrailing();
-		this.changeDetector.detectChanges();
 		setTimeout(() => {
 			if (this.destroyed || pane === null || middle === null) { return; }
 			pane.scrollTo({
@@ -249,7 +247,6 @@ export class Game implements OnInit, OnDestroy {
 			if (!this.game) { return; }
 			this.game.Status = GameStatus.forfeited;
 			this.game.WinnerPlayer = 2;
-			this.changeDetector.detectChanges();
 		}, error => {
 			// TODO error handling
 		}));
@@ -281,7 +278,6 @@ export class Game implements OnInit, OnDestroy {
 		this.game.ActivePlayer = update.ActivePlayer;
 		this.game.WinnerPlayer = update.WinnerPlayer;
 		this.refresh();
-		this.changeDetector.detectChanges();
 		this.scheduleAssessment();
 	}
 
@@ -294,10 +290,9 @@ export class Game implements OnInit, OnDestroy {
 			this.boardSize = 24 * this.state.size + 32;
 			this.refresh();
 			this.measureTrailing();
-			this.changeDetector.detectChanges();
 			this.scheduleAssessment();
 
-			// Listen to the websocket for updates
+			// Start polling for the opponent's turns
 			this.moveService.connect(game.Id, this.userId!, game.Moves.length);
 			this.subscriptions.add(this.moveService.getMessages().subscribe(update => this.receiveUpdate(update)));
 		}, error => {
@@ -332,7 +327,6 @@ export class Game implements OnInit, OnDestroy {
 		setTimeout(() => {
 			if (this.destroyed) { return; }
 			this.drawArrows();
-			this.changeDetector.detectChanges();
 		});
 	}
 
@@ -426,7 +420,6 @@ export class Game implements OnInit, OnDestroy {
 		setTimeout(() => {
 			if (this.destroyed) { return; }
 			this.assess();
-			this.changeDetector.detectChanges();
 		});
 	}
 
@@ -452,7 +445,6 @@ export class Game implements OnInit, OnDestroy {
 		setTimeout(() => {
 			if (this.destroyed || this.judging != id) { return; }
 			this.searching = true;
-			this.changeDetector.detectChanges();
 		}, Game.SEARCH_NOTICE);
 	}
 
@@ -486,7 +478,6 @@ export class Game implements OnInit, OnDestroy {
 			if (!this.game) { return; }
 			this.game.Status = GameStatus.finished;
 			this.game.WinnerPlayer = drawn ? null : 2;
-			this.changeDetector.detectChanges();
 		}, error => {
 			// TODO error handling
 		}));
@@ -502,7 +493,6 @@ export class Game implements OnInit, OnDestroy {
 	private selectBoard(square: Ref) {
 		this.zoom = 4;
 		this.measureTrailing();
-		this.changeDetector.detectChanges();
 		setTimeout(() => {
 			if (this.destroyed) { return; }
 			var board = document.querySelector(`[data-board="${square.l}:${square.t}"]`);
