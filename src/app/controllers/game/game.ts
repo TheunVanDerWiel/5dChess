@@ -436,12 +436,25 @@ export class Game implements OnInit, OnDestroy {
 			}
 		}
 
-		if (this.isPlayerTurn() && !this.isOver()) {
-			var me = this.getUserColor();
-			for (const attack of attacksOn(this.state, me, movableAfter(this.state, opponent(me)))) {
+		// Threats are drawn while the player still has to answer them, and again once
+		// the game is over, where they show which royals were left in check by the
+		// last move played.
+		if (this.isPlayerTurn() || this.isOver()) {
+			var defender = this.sideToMove();
+			for (const attack of attacksOn(this.state, defender, movableAfter(this.state, opponent(defender)))) {
 				add(attack.from, attack.to, 'threat');
 			}
 		}
+	}
+
+	/**
+	 * The colour whose move it is: the player's own while they are to play, and the
+	 * opponent's otherwise. On a game that ended in checkmate this is the side that
+	 * was mated, since it ended on their turn with nothing left to play.
+	 */
+	private sideToMove(): Color {
+		var me = this.getUserColor();
+		return this.game?.ActivePlayer == 1 ? me : opponent(me);
 	}
 
 	/**

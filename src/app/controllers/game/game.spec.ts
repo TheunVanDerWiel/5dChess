@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, provideRouter } from '@angular/router';
 import { Observable, Subject, of } from 'rxjs';
 
 import { Game } from './game';
@@ -12,17 +12,32 @@ import { LocalStorageService } from 'src/app/services/local-storage-service';
 import { JudgeReply } from 'src/app/engine/judge.worker';
 import { Piece } from 'src/app/engine/piece';
 
-/** A board with nothing on it but the two kings, which is enough to be assessed. */
-function startingState(): GameState {
-	const size = 4;
+/** An empty board of the given size, as the wire format holds it. */
+function emptyBoard(size: number): (Piece | null)[][] {
 	const squares: (Piece | null)[][] = [];
 	for (let x = 0; x < size; x++) {
 		const column: (Piece | null)[] = [];
 		for (let y = 0; y < size; y++) { column.push(null); }
 		squares.push(column);
 	}
+	return squares;
+}
+
+/** A board with nothing on it but the two kings, which is enough to be assessed. */
+function startingState(): GameState {
+	const squares = emptyBoard(4);
 	squares[0][0] = Piece.white_king;
 	squares[3][3] = Piece.black_king;
+	return new GameState([new TimeLine(0, [new Board(squares)], undefined)]);
+}
+
+/** A back rank mate: the white king is cornered and the rooks have it covered. */
+function matedState(): GameState {
+	const squares = emptyBoard(8);
+	squares[7][4] = Piece.white_king;
+	squares[1][4] = Piece.black_rook;
+	squares[0][3] = Piece.black_rook;
+	squares[0][5] = Piece.black_rook;
 	return new GameState([new TimeLine(0, [new Board(squares)], undefined)]);
 }
 
@@ -77,7 +92,7 @@ describe('Game', () => {
 			imports: [Game],
 			providers: [
 				{ provide: ActivatedRoute, useValue: { params: of({ gameId: 3 }) } },
-				{ provide: Router, useValue: { navigateByUrl: () => {} } },
+				provideRouter([]),
 				{ provide: GameService, useValue: { getGame: () => of(game) } },
 				{ provide: GameNotification, useValue: notifications },
 				{ provide: JudgeService, useValue: judge },
@@ -148,6 +163,18 @@ describe('Game', () => {
 		await settle();
 
 		expect(notifications.closes).toBe(1);
+	});
+
+	it('marks the royals that were left in check when the game ended', async () => {
+		game.StartingState = matedState();
+		game.Status = GameStatus.finished;
+		game.WinnerPlayer = 2;
+		component.ngOnInit();
+		fixture.detectChanges();
+		await settle();
+		await settle();
+
+		expect(component.arrows.some(arrow => arrow.kind === 'threat')).toBe(true);
 	});
 
 	it('never watches a game that was already over when it was opened', async () => {
