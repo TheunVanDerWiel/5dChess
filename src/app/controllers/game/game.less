@@ -63,10 +63,6 @@ main {
 			}
 		}
 		
-		&.zoom-1, &.zoom-2, &.zoom-3, &.zoom-4, &.zoom-5 {
-			transform-origin: top left;
-		}
-		
 		&.zoom-1, &.zoom-2, &.zoom-3 {
 			.board:hover {
 				cursor: pointer;
@@ -81,24 +77,27 @@ main {
 			}
 		}
 		
+		// zoom rather than a scale transform: a transform does not reflow, so the
+		// pane would keep reserving the unscaled width and leave a screenful of
+		// dead space to scroll through at anything below zoom-3.
 		&.zoom-1 {
-			transform: scale(0.5);
+			zoom: 0.5;
 		}
 
 		&.zoom-2 {
-			transform: scale(0.75);
+			zoom: 0.75;
 		}
 	
 		&.zoom-3 {
-			transform: scale(1);
+			zoom: 1;
 		}
 		
 		&.zoom-4 {
-			transform: scale(1.5);
+			zoom: 1.5;
 		}
 
 		&.zoom-5 {
-			transform: scale(2);
+			zoom: 2;
 		}
 		
 		.active {

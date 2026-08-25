@@ -308,14 +308,26 @@ export class Game implements OnInit, OnDestroy {
 	 * Works out how much empty space to leave past the last board. The table is
 	 * scaled by a transform, so the padding is measured in the board's own
 	 * coordinates and comes out the right size on screen once it has been scaled.
+	 *
+	 * The space is only worth having while the grid outgrows the screen. Once it
+	 * all fits there is nothing to scroll towards, and the padding would be dead
+	 * space that grows as the boards get smaller: it is half a screen wide at any
+	 * zoom, so the further out the view is pulled the more it dwarfs the boards.
 	 */
 	private measureTrailing() {
 		var pane = this.pane();
 		if (pane === null || this.boardSize == 0) { return; }
 		var scale = Game.ZOOM_SCALE[this.zoom - 1];
+		// Measured off the view rather than the table, because this runs before the
+		// new zoom has been laid out. The header row and column are left out, so a
+		// grid that only just fits still counts as overflowing and keeps its space.
+		var spread = (this.view?.columns.length ?? 0) * this.boardSize * scale;
+		var depth = (this.view?.rows.length ?? 0) * this.boardSize * scale;
 		this.trailing = {
-			right: Math.max(0, (pane.clientWidth / scale - this.boardSize) / 2),
-			bottom: Math.max(0, (pane.clientHeight / scale - this.boardSize) / 2)
+			right: spread <= pane.clientWidth ? 0
+				: Math.max(0, (pane.clientWidth / scale - this.boardSize) / 2),
+			bottom: depth <= pane.clientHeight ? 0
+				: Math.max(0, (pane.clientHeight / scale - this.boardSize) / 2)
 		};
 	}
 
