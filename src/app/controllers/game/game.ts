@@ -73,6 +73,8 @@ export class Game implements OnInit, OnDestroy {
 	private destroyed = false;
 	/** Which judgement the answer is currently being waited on for. */
 	private judging = 0;
+	/** How many turns had been played when the running search was started. */
+	private judgingAt = -1;
 	/** The position the game was set up with, which decides the promotion choices. */
 	private start: State | undefined;
 	private subscriptions = new Subscription();
@@ -214,6 +216,7 @@ export class Game implements OnInit, OnDestroy {
 			// A whole turn went in, so there was one to find: nothing left to search for.
 			this.judgeService.cancel();
 			this.judging = 0;
+			this.judgingAt = -1;
 			this.searching = false;
 			this.pending = [];
 			this.applied = [];
@@ -247,6 +250,7 @@ export class Game implements OnInit, OnDestroy {
 			if (!this.game) { return; }
 			this.game.Status = GameStatus.forfeited;
 			this.game.WinnerPlayer = 2;
+			this.stopWatchingIfOver();
 		}, error => {
 			// TODO error handling
 		}));
@@ -270,6 +274,15 @@ export class Game implements OnInit, OnDestroy {
 
 	public receiveUpdate(update: GameUpdate) {
 		if (!this.game || !this.state) { return; }
+		// The game is polled on a timer, so most answers carry no news at all. Acting
+		// on one of those would rebuild the board and start the checkmate search over
+		// every few seconds, so nothing happens here unless the answer says something
+		// the board does not already show.
+		var changed = update.Moves.length > 0
+			|| update.Status != this.game.Status
+			|| update.ActivePlayer != this.game.ActivePlayer
+			|| update.WinnerPlayer != this.game.WinnerPlayer;
+		if (!changed) { return; }
 		update.Moves.forEach(turn => {
 			applyTurn(this.state!, turn.Pieces.map(moveFromDto));
 			this.game!.Moves.push(turn);
@@ -277,8 +290,18 @@ export class Game implements OnInit, OnDestroy {
 		this.game.Status = update.Status;
 		this.game.ActivePlayer = update.ActivePlayer;
 		this.game.WinnerPlayer = update.WinnerPlayer;
+		this.stopWatchingIfOver();
 		this.refresh();
 		this.scheduleAssessment();
+	}
+
+	/**
+	 * A game that has ended has nothing further to report, so it stops being asked.
+	 * Called wherever the game may have reached its end, since it can end on the
+	 * opponent's account as easily as on the player's own.
+	 */
+	private stopWatchingIfOver() {
+		if (this.isOver()) { this.moveService.close(); }
 	}
 
 	private loadGame(gameId: number) {
@@ -292,9 +315,11 @@ export class Game implements OnInit, OnDestroy {
 			this.measureTrailing();
 			this.scheduleAssessment();
 
-			// Start polling for the opponent's turns
-			this.moveService.connect(game.Id, this.userId!, game.Moves.length);
-			this.subscriptions.add(this.moveService.getMessages().subscribe(update => this.receiveUpdate(update)));
+			// Start polling for the opponent's turns, unless the game is already over.
+			if (!this.isOver()) {
+				this.moveService.connect(game.Id, this.userId!, game.Moves.length);
+				this.subscriptions.add(this.moveService.getMessages().subscribe(update => this.receiveUpdate(update)));
+			}
 		}, error => {
 			this.router.navigateByUrl('/');
 		}));
@@ -436,15 +461,24 @@ export class Game implements OnInit, OnDestroy {
 	}
 
 	private assess() {
-		this.inCheck = false;
-		this.searching = false;
 		if (!this.state || !this.game || this.isOver()
-			|| !this.isPlayerTurn() || this.pending.length > 0) { return; }
+			|| !this.isPlayerTurn() || this.pending.length > 0) {
+			this.inCheck = false;
+			this.searching = false;
+			return;
+		}
 
+		// A search already running for this very position is left to get on with it.
+		// Starting over would mean a long one never got far enough to answer, and the
+		// notice that it is still going would blink away with every fresh start.
+		if (this.judging != 0 && this.judgingAt == this.game.Moves.length) { return; }
+
+		this.searching = false;
 		var me = this.getUserColor();
 		this.inCheck = isAttacked(this.state, me, movableAfter(this.state, opponent(me)));
 		// Whether a turn exists at all is handed to the worker, which keeps at it for
 		// as long as it takes rather than giving up and leaving the game in limbo.
+		this.judgingAt = this.game.Moves.length;
 		this.judging = this.judgeService.ask(this.game.StartingState, this.game.Moves, me);
 		this.noticeSlowSearch(this.judging);
 	}
@@ -463,6 +497,7 @@ export class Game implements OnInit, OnDestroy {
 	private receiveVerdict(reply: JudgeReply) {
 		if (reply.id != this.judging || !this.isPlayerTurn() || this.isOver()) { return; }
 		this.judging = 0;
+		this.judgingAt = -1;
 		this.searching = false;
 		if (reply.verdict == Verdict.trapped) {
 			// Nothing to play: checkmate if that is because of an attack, otherwise
@@ -490,6 +525,7 @@ export class Game implements OnInit, OnDestroy {
 			if (!this.game) { return; }
 			this.game.Status = GameStatus.finished;
 			this.game.WinnerPlayer = drawn ? null : 2;
+			this.stopWatchingIfOver();
 		}, error => {
 			// TODO error handling
 		}));
