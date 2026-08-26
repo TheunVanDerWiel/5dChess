@@ -79,7 +79,7 @@ enum GameType: int
             self::SPECIAL_GLOBAL_WARMING->value,
             self::SPECIAL_KING_OF_KINGS->value,
             self::SPECIAL_ROYAL_QUEEN_SHOWDOWN->value,
-            self::FOCUSSED_KINGS->value,
+            self::FOCUSSED_KNIGHTS->value,
             self::FOCUSSED_BISHOPS->value,
             self::FOCUSSED_ROOKS->value,
             self::FOCUSSED_QUEENS->value,
