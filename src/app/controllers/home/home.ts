@@ -2,16 +2,19 @@ import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GameService } from 'src/app/services/game-service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { LocalStorageService } from 'src/app/services/local-storage-service';
 import { Subscription } from 'rxjs';
 import { GameStatus, GameSummary } from 'src/app/types/Game';
+import { QrCode } from 'src/app/components/qr-code/qr-code';
+import { USER_ID_PARAM } from 'src/app/services/user-id';
 
 @Component({
 	selector: 'app-home',
 	imports: [
 		CommonModule,
-		FormsModule
+		FormsModule,
+		QrCode
 	],
 	templateUrl: './home.html',
 	styleUrl: './home.less',
@@ -21,6 +24,7 @@ export class Home implements OnInit, OnDestroy {
 	public MODE_OVERVIEW = 0;
 	public MODE_NEW = 1;
 	public MODE_JOIN = 2;
+	public MODE_USERID = 3;
 	public GAME_TYPES = [
 		{ id: 0, name: 'Random' },
 		{ id: 1, name: 'Standard', recommended: true },
@@ -72,7 +76,18 @@ export class Home implements OnInit, OnDestroy {
 		{ id: 78, parent: 7, name: 'Brawns' }
 	];
 	
-	public userId: string | undefined;
+	/** What the input box holds, which is set before anything is first drawn. */
+	public userId = '';
+	/**
+	 * The id as it was last saved. The field above follows the input box while it
+	 * is being typed in, so the code and link are drawn from this one instead.
+	 */
+	public savedUserId: string | undefined;
+	/**
+	 * Whether the browser refused to keep the id, leaving the address bar as the
+	 * only place holding on to it. A bookmark then stands in for local storage.
+	 */
+	public unstored = false;
 	public mode: number = this.MODE_OVERVIEW;
 	public gameId: number | undefined;
 	public typeId: number | undefined;
@@ -83,10 +98,18 @@ export class Home implements OnInit, OnDestroy {
 	private subscriptions = new Subscription();
 	
 	private router = inject(Router);
+	private route = inject(ActivatedRoute);
 	private localStorage = inject(LocalStorageService);
 	private gameService = inject(GameService);
 
 	ngOnInit(): void {
+		// An id off a scanned code or a shared link speaks for whatever is stored here.
+		var shared = this.route.snapshot.queryParamMap.get(USER_ID_PARAM);
+		if (shared) {
+			this.saveUserId(shared);
+			return;
+		}
+
 		var userId = this.localStorage.getItem('userId');
 		if (userId === null) {
 			userId = '';
@@ -94,13 +117,51 @@ export class Home implements OnInit, OnDestroy {
 			for (var i = 0; i < 64; i++) {
 				userId += characters.charAt(Math.floor(Math.random()*charChoices));
 			}
-			this.localStorage.setItem('userId', userId);
-			userId = this.localStorage.getItem('userId');
+			this.saveUserId(userId);
+		} else {
+			this.userId = this.savedUserId = userId;
+			this.loadGames(userId);
 		}
-		this.userId = userId !== null ? userId : undefined;
-		if (!!this.userId) {
-			this.loadGames(this.userId);
+	}
+
+	public saveUserId(userId: string) {
+		var currentUserId = this.localStorage.getItem('userId');
+		this.localStorage.setItem('userId', userId);
+		// Nothing reads back when the browser will not keep it, and the id then has
+		// to live in the address bar for as long as this page is open.
+		this.unstored = this.localStorage.getItem('userId') !== userId;
+		this.userId = this.savedUserId = userId;
+		this.rememberInUrl();
+		if (currentUserId != userId) {
+			this.loadGames(userId);
 		}
+	}
+
+	/**
+	 * Puts the id in the address bar, or takes it back out again. It is only left
+	 * there when nothing else is holding it: otherwise it would be shared on by
+	 * accident, through a copied link or a screenshot.
+	 */
+	private rememberInUrl() {
+		this.router.navigate([], { queryParams: this.carried(), replaceUrl: true });
+	}
+
+	/**
+	 * What every link out of here has to carry, which is the id itself when the
+	 * address bar is the only thing holding it and nothing at all otherwise.
+	 */
+	public carried(): { [name: string]: string | undefined } {
+		return this.unstored ? { [USER_ID_PARAM]: this.savedUserId } : {};
+	}
+
+	/**
+	 * The link that hands this browser's id to another device, which is what the
+	 * code beside the input encodes. Opening it there is the same as typing the id in.
+	 */
+	public crossplayUrl(): string {
+		if (!this.savedUserId) { return ''; }
+		return window.location.origin + window.location.pathname
+			+ '?' + USER_ID_PARAM + '=' + encodeURIComponent(this.savedUserId);
 	}
 
 	/** Whether it is the player's move in this game. */
@@ -127,7 +188,7 @@ export class Home implements OnInit, OnDestroy {
 	}
 
 	public resume(gameId: number) {
-		this.router.navigateByUrl('/game/' + gameId);
+		this.router.navigate(['/game', gameId], { queryParams: this.carried() });
 	}
 
 	private loadGames(userId: string) {
@@ -165,7 +226,7 @@ export class Home implements OnInit, OnDestroy {
 		}
 		
 		this.subscriptions.add(this.gameService.create(this.userId, typeId).subscribe(gameId => {
-			this.router.navigateByUrl("/game/"+gameId);
+			this.router.navigate(['/game', gameId], { queryParams: this.carried() });
 		}));
 	}
 	
@@ -173,7 +234,7 @@ export class Home implements OnInit, OnDestroy {
 		if (!this.userId || !this.gameId) { return; }
 		
 		this.subscriptions.add(this.gameService.join(this.gameId, this.userId).subscribe(gameId => {
-			this.router.navigateByUrl("/game/"+this.gameId);
+			this.router.navigate(['/game', this.gameId], { queryParams: this.carried() });
 		}));
 	}
 }

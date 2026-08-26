@@ -20,6 +20,7 @@ import { PieceSprite } from 'src/app/components/piece-sprite/piece-sprite';
 import { Arrow, BoardView, Origin, buildView } from './board-view';
 import { JudgeService } from 'src/app/services/judge-service';
 import { JudgeReply } from 'src/app/engine/judge.worker';
+import { USER_ID_PARAM } from 'src/app/services/user-id';
 
 @Component({
 	selector: 'app-game',
@@ -71,6 +72,11 @@ export class Game implements OnInit, OnDestroy {
 	/** Whether the selected piece is only being looked at, not moved. */
 	public previewing = false;
 	public userId: string | null = null;
+	/**
+	 * What links back to the menu have to carry: the id itself when the browser will
+	 * not store it, so that the address bar keeps holding it, and nothing otherwise.
+	 */
+	public carried: { [name: string]: string } = {};
 
 	/** The moves played so far this turn, and what it takes to take them back. */
 	private pending: EngineMove[] = [];
@@ -93,16 +99,20 @@ export class Game implements OnInit, OnDestroy {
 	private localStorage = inject(LocalStorageService);
 
 	ngOnInit(): void {
-		// Check if user is a player of the game
-		this.userId = this.localStorage.getItem('userId');
+		// Check if user is a player of the game. A browser that will not store the id
+		// leaves it in the address bar instead, so that is where it is looked for next.
+		var stored: string | null = this.localStorage.getItem('userId');
+		this.userId = stored ?? this.route.snapshot.queryParamMap.get(USER_ID_PARAM);
 		if (this.userId === null) {
 			this.router.navigateByUrl('/');
+		} else if (stored === null) {
+			this.carried = { [USER_ID_PARAM]: this.userId };
 		}
 		this.subscriptions.add(this.judgeService.answers().subscribe(reply => this.receiveVerdict(reply)));
 		this.subscriptions.add(this.route.params.subscribe(routeParams => {
 			var gameId = routeParams['gameId'];
 			if (!gameId) {
-				this.router.navigateByUrl('/');
+				this.leave();
 			}
 
 			this.loadGame(gameId);
@@ -363,8 +373,13 @@ export class Game implements OnInit, OnDestroy {
 				this.subscriptions.add(this.moveService.getMessages().subscribe(update => this.receiveUpdate(update)));
 			}
 		}, error => {
-			this.router.navigateByUrl('/');
+			this.leave();
 		}));
+	}
+
+	/** Back to the menu, taking the id along if the address bar is all that holds it. */
+	private leave() {
+		this.router.navigate(['/'], { queryParams: this.carried });
 	}
 
 	private pane(): HTMLElement | null {

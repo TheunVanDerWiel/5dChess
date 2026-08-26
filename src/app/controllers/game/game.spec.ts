@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, provideRouter } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { Observable, Subject, of, throwError } from 'rxjs';
 
 import { Game } from './game';
@@ -114,7 +114,10 @@ describe('Game', () => {
 		await TestBed.configureTestingModule({
 			imports: [Game],
 			providers: [
-				{ provide: ActivatedRoute, useValue: { params: of({ gameId: 3 }) } },
+				{ provide: ActivatedRoute, useValue: {
+					params: of({ gameId: 3 }),
+					snapshot: { queryParamMap: convertToParamMap({}) }
+				} },
 				provideRouter([]),
 				{ provide: GameService, useValue: games },
 				{ provide: GameNotification, useValue: notifications },

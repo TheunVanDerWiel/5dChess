@@ -1,12 +1,22 @@
 .fill {
+	// Pinned rather than sized in viewport units. A phone reports 100vh as the
+	// viewport it would have with its toolbars retracted, so a box that tall ends
+	// up underneath them and takes the footer with it; dvh is meant to be the
+	// height on show, but not every browser in use honours it. What a fixed box
+	// resolves against is the viewport with the toolbars showing, which is the
+	// height wanted here and is understood everywhere. It leaves the document
+	// with nothing in flow, so the page cannot be scrolled and the toolbars stay
+	// put, and the column below goes on measuring the footer for itself.
+	position: fixed;
+	top: 0; left: 0; bottom: 0; right: 0;
 	display: flex;
 	flex-flow: column;
-	height: 100vh;
-	width: 100vw;
 }
 
 header, footer {
-	flex: 0 1 auto;
+	// Never shrink: when the boards leave no room to spare, it is main that gives
+	// it up - it scrolls, and these two would simply be cut off.
+	flex: 0 0 auto;
 }
 
 main {
