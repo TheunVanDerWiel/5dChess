@@ -146,7 +146,11 @@ class GameServices extends BaseMiddleware {
 				}
 				$game->StartingPlayer = rand(1, 2);
 				$game->Moves = "[]";
-				$game->ActivePlayer = $game->StartingPlayer;
+				// Which player has the first turn is the position's to say, not white's by
+				// assumption: a setup that hands out a board already played on opens on
+				// black instead.
+				$game->ActivePlayer = $this->whiteMovesFirst($game->StartingState)
+				    ? $game->StartingPlayer : 3-$game->StartingPlayer;
 				$game->Status = GameStatus::STARTING->value;
 				
 				if (!$game->save()) {
@@ -319,6 +323,38 @@ class GameServices extends BaseMiddleware {
 				})->add(new JsonValidationMiddleware($this->app, $this->db, Model::GAME_JOIN_REQUEST));
 			});
 		});
+	}
+
+	/**
+	 * Whether white has the first turn of a game opening on the given position.
+	 *
+	 * A board's absolute time says which colour is to move on it: even is white's and
+	 * odd is black's, counting from the opening position at time 0. The turn belongs
+	 * to whoever is to move on the present, which is the earliest head board among the
+	 * active timelines: those within one either side of the count both players match.
+	 *
+	 * Every setup but Turn Zero opens on one board per timeline at time 0, so this
+	 * only says anything other than white where a setup starts a timeline off with a
+	 * board that has already been played on.
+	 */
+	private function whiteMovesFirst($state) {
+	    $lines = json_decode($state, true)["TimeLines"];
+	    $positive = 0;
+	    $negative = 0;
+	    foreach ($lines as $line) {
+	        if ($line["Index"] > 0) { $positive++; }
+	        if ($line["Index"] < 0) { $negative++; }
+	    }
+	    // A player always holds one activatable spare timeline beyond the count the
+	    // opponent has matched; anything past that does not hold the present back.
+	    $limit = min($positive, $negative) + 1;
+	    $present = PHP_INT_MAX;
+	    foreach ($lines as $line) {
+	        if (abs($line["Index"]) > $limit) { continue; }
+	        $start = isset($line["Origin"]) ? $line["Origin"]["Time"] : 0;
+	        $present = min($present, $start + count($line["Boards"]) - 1);
+	    }
+	    return $present % 2 === 0;
 	}
 }
 ?>
