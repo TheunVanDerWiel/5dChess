@@ -60,13 +60,13 @@ main {
 
 			.origin {
 				fill: none;
-				stroke: #7A28CB;
+				stroke: var(--bs-purple);
 				stroke-width: 4;
 				stroke-linecap: round;
 			}
 
 			#head-origin > path {
-				fill: #7A28CB;
+				fill: var(--bs-purple);
 			}
 		}
 
@@ -86,20 +86,20 @@ main {
 			}
 			
 			.arrow-move {
-				stroke: #34C3EB;
+				stroke: var(--bs-info);
 				opacity: 0.65;
 			}
 			
 			.arrow-threat {
-				stroke: #D93027;
+				stroke: var(--bs-danger);
 			}
 			
 			#head-move > path {
-				fill: #34C3EB;
+				fill: var(--bs-info);
 			}
 			
 			#head-threat > path {
-				fill: #D93027;
+				fill: var(--bs-danger);
 			}
 		}
 		
@@ -205,6 +205,20 @@ main {
 				height: 100%;
 				fill: currentColor;
 				vertical-align: top;
+			}
+
+			&.move-regular:after {
+				content: ' ';
+				position: absolute;
+				top: 0; left: 0; bottom: 0; right: 0;
+				background: radial-gradient(rgba(0,0,0,0), var(--bs-warning-border-subtle));
+			}
+
+			&.move-multiverse:after {
+				content: ' ';
+				position: absolute;
+				top: 0; left: 0; bottom: 0; right: 0;
+				background: radial-gradient(rgba(0,0,0,0), var(--bs-info-border-subtle));
 			}
 
 			&.border-selected:after {

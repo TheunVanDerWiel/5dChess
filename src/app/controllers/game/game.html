@@ -67,7 +67,7 @@
 						@for (boardRow of board.rows; track $index) {
 							<div>
 								@for (square of boardRow; track $index) {
-									<div class="square" [ngClass]="getHighlight(square.square)" (click)="select(square.square)">
+									<div class="square" [ngClass]="getHighlight(square.square) + ' ' + square.move" (click)="select(square.square)">
 										@if (square.piece !== null) {
 											<svg class="piece"><use [attr.href]="getPieceIcon(square.piece!, square.square.x, square.square.y)" /></svg>
 										} @else {

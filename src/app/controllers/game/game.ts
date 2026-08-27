@@ -81,6 +81,12 @@ export class Game implements OnInit, OnDestroy {
 	/** The moves played so far this turn, and what it takes to take them back. */
 	private pending: EngineMove[] = [];
 	private applied: AppliedMove[] = [];
+	/**
+	 * Every move of every turn already played, in order. Kept because a move only
+	 * says where it went and not what that produced, and the boards it produced are
+	 * where it is marked on screen.
+	 */
+	private history: AppliedMove[] = [];
 	private state: State | undefined;
 	private destroyed = false;
 	/** Which judgement the answer is currently being waited on for. */
@@ -229,6 +235,7 @@ export class Game implements OnInit, OnDestroy {
 			this.game.Moves.push(move);
 			this.game.ActivePlayer = 3 - this.game.ActivePlayer;
 			this.moveService.acknowledge(this.game.Moves.length);
+			this.history.push(...this.applied);
 			// A whole turn went in, so there was one to find: nothing left to search for.
 			this.judgeService.cancel();
 			this.judging = 0;
@@ -308,7 +315,7 @@ export class Game implements OnInit, OnDestroy {
 		if (!changed) { return; }
 		var wasWaiting = !this.isPlayerTurn();
 		update.Moves.forEach(turn => {
-			applyTurn(this.state!, turn.Pieces.map(moveFromDto));
+			this.history.push(...applyTurn(this.state!, turn.Pieces.map(moveFromDto)));
 			this.game!.Moves.push(turn);
 		});
 		this.game.Status = update.Status;
@@ -357,7 +364,8 @@ export class Game implements OnInit, OnDestroy {
 			this.game = game;
 			this.start = stateFromDto(game.StartingState);
 			this.state = this.start.clone();
-			game.Moves.forEach(turn => applyTurn(this.state!, turn.Pieces.map(moveFromDto)));
+			this.history = [];
+			game.Moves.forEach(turn => this.history.push(...applyTurn(this.state!, turn.Pieces.map(moveFromDto))));
 			this.boardSize = 24 * this.state.size + 32;
 			this.refresh();
 			this.measureTrailing();
@@ -416,7 +424,7 @@ export class Game implements OnInit, OnDestroy {
 	/** Rebuilds the read model after the position changed. */
 	private refresh() {
 		if (!this.state) { return; }
-		this.view = buildView(this.state, this.getUserColor());
+		this.view = buildView(this.state, this.getUserColor(), this.history.concat(this.applied));
 		// The boards have to be laid out before anything can be drawn over them.
 		setTimeout(() => {
 			if (this.destroyed) { return; }
