@@ -78,7 +78,7 @@ class GameServices extends BaseMiddleware {
 				    case GameType::STANDARD_TWO_TIMELINES->value:
 				        $game->StartingState = '{"TimeLines":[{"Index":-1,"Boards":[{"Squares":[[2,4,8,16,32,8,4,2],[0,0,0,0,0,0,0,0],[null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null],[1,1,1,1,1,1,1,1],[3,5,9,17,33,9,5,3]]}]},{"Index":1,"Boards":[{"Squares":[[2,4,8,16,32,8,4,2],[0,0,0,0,0,0,0,0],[null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null],[1,1,1,1,1,1,1,1],[3,5,9,17,33,9,5,3]]}]}]}'; break;
 				    case GameType::SMALL_REGULAR->value:
-				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[32,16,8,4,2],[0,0,0,0,0],[null,null,null,null,null],[1,1,1,1,1],[17,33,9,5,3]]}]}]}'; break;
+				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[32,16,8,4,2],[0,0,0,0,0],[null,null,null,null,null],[1,1,1,1,1],[33,17,9,5,3]]}]}]}'; break;
 				    case GameType::SMALL_CENTERED->value:
 				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[2,4,32,16,2],[0,0,0,0,0],[null,null,null,null,null],[1,1,1,1,1],[3,17,33,5,3]]}]}]}'; break;
 				    case GameType::SMALL_FLIPPED->value:
@@ -86,17 +86,17 @@ class GameServices extends BaseMiddleware {
 				    case GameType::SMALL_OPEN->value:
 				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[0,2,4,8,32],[null,null,null,0,0],[null,null,null,null,null],[1,1,null,null,null],[33,9,5,3,1]]}]}]}'; break;
 				    case GameType::VERY_SMALL_REGULAR->value:
-				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[32,2,8,4],[0,0,0,0],[1,1,1,1],[33,3,9,5]]}]}]}'; break;
+				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[4,8,2,32],[0,0,0,0],[1,1,1,1],[33,3,9,5]]}]}]}'; break;
 				    case GameType::VERY_SMALL_OPEN->value:
 				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[4,8,2,32],[null,null,null,0],[1,null,null,null],[33,3,9,5]]}]}]}'; break;
 				    case GameType::FOCUSSED_BISHOPS->value:
-				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[null,4,4,32,null],[null,null,null,null,null],[null,null,null,null,null],[null,null,null,null,null],[null,33,5,5,null]]}]}]}'; break;
+				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[null,8,8,32,null],[null,null,null,null,null],[null,null,null,null,null],[null,null,null,null,null],[null,33,9,9,null]]}]}]}'; break;
 				    case GameType::FOCUSSED_DRAGONS->value:
 				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[null,null,256,256,32],[null,null,null,null,null],[null,null,null,null,null],[null,null,null,null,null],[33,257,257,null,null]]}]}]}'; break;
 				    case GameType::FOCUSSED_KINGS->value:
 				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[null,null,32],[null,null,null],[33,null,null]]}]}]}'; break;
 				    case GameType::FOCUSSED_KNIGHTS->value:
-				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[8,null,32,8,null],[null,null,null,null,null],[null,null,null,null,null],[null,null,null,null,null],[null,9,33,null,9]]}]}]}'; break;
+				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[4,null,32,4,null],[null,null,null,null,null],[null,null,null,null,null],[null,null,null,null,null],[null,5,33,null,5]]}]}]}'; break;
 				    case GameType::FOCUSSED_PAWNS->value:
 				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[0,0,0,0,32],[null,null,null,null,null],[null,null,null,null,null],[null,null,null,null,null],[33,1,1,1,1]]}]}]}'; break;
 				    case GameType::FOCUSSED_QUEENS->value:
@@ -105,6 +105,8 @@ class GameServices extends BaseMiddleware {
 				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[null,2,32,null,2],[null,null,null,null,null],[null,null,null,null,null],[null,null,null,null,null],[3,null,33,3,null]]}]}]}'; break;
 				    case GameType::FOCUSSED_UNICORNS->value:
 				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[null,128,null,128,32],[null,null,null,null,null],[null,null,null,null,null],[null,null,null,null,null],[33,129,null,129,null]]}]}]}'; break;
+				    case GameType::FOCUSSED_BRAWNS->value:
+				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[64,64,64,64,32],[null,null,null,null,null],[null,null,null,null,null],[null,null,null,null,null],[33,65,65,65,65]]}]}]}'; break;
 				    case GameType::SIMPLE_KNIGHTS_VS_BISHOPS->value:
 				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[2,8,16,32,8,2],[0,0,0,0,0,0],[null,null,null,null,null,null],[null,null,null,null,null,null],[1,1,1,1,1,1],[3,5,17,33,5,3]]}]}]}'; break;
 				    case GameType::SIMPLE_NO_QUEENS->value:
@@ -116,31 +118,31 @@ class GameServices extends BaseMiddleware {
 				    case GameType::SIMPLE_NO_ROOKS->value:
 				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[4,8,16,32,8,4],[0,0,0,0,0,0],[null,null,null,null,null,null],[null,null,null,null,null,null],[1,1,1,1,1,1],[5,9,17,33,9,5]]}]}]}'; break;
 				    case GameType::SIMPLE_SIMPLE_SET->value:
-				        return $this->badRequest(array("error" => "Unkown game type"));
+				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[2,4,8,16,32,2],[0,0,0,0,0,0],[null,null,null,null,null,null],[null,null,null,null,null,null],[1,1,1,1,1,1],[3,33,17,9,5,3]]}]}]}'; break;
 				    case GameType::SPECIAL_EXCESSIVE->value:
-				        return $this->badRequest(array("error" => "Unkown game type"));
+				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[32,2,128,16,256,2,32],[2,4,8,32,4,8,2],[0,0,0,0,0,0,0],[null,null,null,null,null,null,null],[1,1,1,1,1,1,1],[3,5,9,33,5,9,3],[33,3,129,17,257,3,33]]}]}]}'; break;
 				    case GameType::SPECIAL_GLOBAL_WARMING->value:
-				        return $this->badRequest(array("error" => "Unkown game type"));
+				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[null]]}]}]}'; break;
 				    case GameType::SPECIAL_KING_OF_KINGS->value:
-				        return $this->badRequest(array("error" => "Unkown game type"));
+				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[2048,2048,32,2048,2048],[null,null,null,null,null],[null,null,null,null,null],[null,null,null,null,null],[2049,2049,33,2049,2049]]}]}]}'; break;
 				    case GameType::SPECIAL_ROYAL_QUEEN_SHOWDOWN->value:
-				        return $this->badRequest(array("error" => "Unkown game type"));
+				        $game->StartingState = '{"TimeLines":[{"Index":0,"Boards":[{"Squares":[[null,null,null,null,1024,null],[null,null,null,null,null,null],[null,null,null,null,null,null],[null,null,null,null,null,null],[null,null,null,null,null,null],[null,1025,null,null,null,null]]}]}]}'; break;
 				    case GameType::MISC_BATTLEGROUND->value:
-				        $game->StartingState = '{"TimeLines":[{"Index":-1,"Boards":[{"Squares":[[2,2,32,2,2],[4,4,16,4,4],[0,0,0,0,0],[null,null,null,null,null],[1,1,1,1,1]]}]},{"Index":0,"Boards":[{"Squares":[[8,8,8,8,8],[0,0,0,0,0],[null,null,null,null,null],[1,1,1,1,1],[9,9,9,9,9]]}]},{"Index":1,"Boards":[{"Squares":[[0,0,0,0,0],[null,null,null,null,null],[1,1,1,1,1],[5,5,17,5,5],[9,9,33,9,9]]}]}]}'; break;
+				        $game->StartingState = '{"TimeLines":[{"Index":-1,"Boards":[{"Squares":[[2,2,32,2,2],[8,8,16,8,8],[0,0,0,0,0],[null,null,null,null,null],[1,1,1,1,1]]}]},{"Index":0,"Boards":[{"Squares":[[4,4,4,4,4],[0,0,0,0,0],[null,null,null,null,null],[1,1,1,1,1],[5,5,5,5,5]]}]},{"Index":1,"Boards":[{"Squares":[[0,0,0,0,0],[null,null,null,null,null],[1,1,1,1,1],[9,9,17,9,9],[3,3,33,3,3]]}]}]}'; break;
 				    case GameType::MISC_FORMATIONS->value:
 				        $game->StartingState = '{"TimeLines":[{"Index":-1,"Boards":[{"Squares":[[0,0,0,0,0],[null,null,null,null,null],[null,null,null,null,null],[null,null,null,null,null],[null,null,33,null,null]]}]},{"Index":1,"Boards":[{"Squares":[[null,null,32,null,null],[null,null,null,null,null],[null,null,null,null,null],[null,null,null,null,null],[1,1,1,1,1]]}]}]}'; break;
 				    case GameType::MISC_FRAGMENTS->value:
-				        return $this->badRequest(array("error" => "Unkown game type"));
+				        $game->StartingState = '{"TimeLines":[{"Index":-1,"Origin":{"Time":1,"Parent":1},"Boards":[{"Squares":[[32,0,0,0],[null,null,null,null],[null,null,null,null],[5,9,3,129]]}]},{"Index":1,"Boards":[{"Squares":[[4,8,2,128],[null,null,null,null],[null,null,null,null],[33,1,1,1]]}]}]}'; break;
 				    case GameType::MISC_INVASIONS->value:
-				        return $this->badRequest(array("error" => "Unkown game type"));
+				        $game->StartingState = '{"TimeLines":[{"Index":-1,"Boards":[{"Squares":[[4,8,32,2,8],[0,0,0,0,0],[null,null,null,null,null],[null,null,null,null,null],[1,1,1,1,1]]}]},{"Index":1,"Boards":[{"Squares":[[0,0,0,0,0],[null,null,null,null,null],[null,null,null,null,null],[1,1,1,1,1],[5,9,33,3,9]]}]}]}'; break;
 				    case GameType::MISC_MARAUDERS->value:
-				        return $this->badRequest(array("error" => "Unkown game type"));
+				        $game->StartingState = '{"TimeLines":[{"Index":-1,"Boards":[{"Squares":[[64,2,32,2,64],[null,64,64,64,null],[null,null,null,null,null],[null,null,null,null,null],[null,null,null,null,null]]}]},{"Index":0,"Boards":[{"Squares":[[64,null,64,null,64],[null,null,null,null,null],[null,null,null,null,null],[null,null,null,null,null],[65,null,65,null,65]]}]},{"Index":1,"Boards":[{"Squares":[[null,null,null,null,null],[null,null,null,null,null],[null,null,null,null,null],[null,65,65,65,null],[65,3,33,3,65]]}]}]}'; break;
 				    case GameType::MISC_SKIRMISH->value:
-				        return $this->badRequest(array("error" => "Unkown game type"));
+				        $game->StartingState = '{"TimeLines":[{"Index":-1,"Boards":[{"Squares":[[null,null,null,2,32],[null,null,null,0,0],[null,null,null,null,null],[9,9,null,null,null],[5,5,null,null,null]]}]},{"Index":1,"Boards":[{"Squares":[[null,null,null,4,4],[null,null,null,8,8],[null,null,null,null,null],[1,1,null,null,null],[33,3,null,null,null]]}]}]}'; break;
 				    case GameType::MISC_STRATEGOS->value:
 				        $game->StartingState = '{"TimeLines":[{"Index":-1,"Boards":[{"Squares":[[4,8,32,128,2],[0,0,0,0,0],[null,null,null,null,null],[null,null,null,null,null],[null,null,null,null,null]]}]},{"Index":1,"Boards":[{"Squares":[[null,null,null,null,null],[null,null,null,null,null],[null,null,null,null,null],[1,1,1,1,1],[3,129,33,9,5]]}]}]}'; break;
 				    case GameType::MISC_TACTICIAN->value:
-				        $game->StartingState = '{"TimeLines":[{"Index":-1,"Boards":[{"Squares":[[32,4,8,2],[0,0,0,0],[null,null,null,null],[null,null,null,null]]}]},{"Index":1,"Boards":[{"Squares":[[null,null,null,null],[null,null,null,null],[1,1,1,1],[33,5,9,3]]}]}]}'; break;
+				        $game->StartingState = '{"TimeLines":[{"Index":-1,"Boards":[{"Squares":[[32,8,4,2],[0,0,0,0],[null,null,null,null],[null,null,null,null]]}]},{"Index":1,"Boards":[{"Squares":[[null,null,null,null],[null,null,null,null],[1,1,1,1],[33,9,5,3]]}]}]}'; break;
 				    default:
 			            return $this->badRequest(array("error" => "Unkown game type"));
 				}
