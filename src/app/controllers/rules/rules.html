@@ -1,0 +1,159 @@
+<app-piece-sprite />
+
+<main>
+	<div class="container py-4">
+		<div class="row mb-3">
+			<div class="col-12 col-sm-6 col-md-4 d-grid">
+				<a class="btn btn-outline-secondary btn-lg" routerLink="/" [queryParams]="carried"><i class="fas fa-arrow-left"></i> Main menu</a>
+			</div>
+		</div>
+
+		<div class="text-center mb-5">
+			<h1>How to play</h1>
+			<h2 class="h4">Chess, but the board is a multiverse</h2>
+		</div>
+
+		<nav class="mb-5" aria-label="Contents">
+			<ol class="contents">
+				<li><a href="#goal" (click)="scrollTo($event, 'goal')">The goal</a></li>
+				<li><a href="#multiverse" (click)="scrollTo($event, 'multiverse')">Reading the multiverse</a></li>
+				<li><a href="#turns" (click)="scrollTo($event, 'turns')">Taking a turn</a></li>
+				<li><a href="#time-travel" (click)="scrollTo($event, 'time-travel')">Time travel and new timelines</a></li>
+				<li><a href="#present" (click)="scrollTo($event, 'present')">The present and active timelines</a></li>
+				<li><a href="#check" (click)="scrollTo($event, 'check')">Check, checkmate and stalemate</a></li>
+				<li><a href="#axes" (click)="scrollTo($event, 'axes')">Moving in four dimensions</a></li>
+				<li><a href="#pieces" (click)="scrollTo($event, 'pieces')">The pieces</a></li>
+			</ol>
+		</nav>
+
+		<section id="goal" class="mb-5">
+			<h3>The goal</h3>
+			<p>Just like in normal chess, you win by checkmating your opponent. The difference is where the pieces can go: besides moving across a board, they can travel back in time and across parallel timelines, and so can the threats against your king.</p>
+			<p>Everything you know from normal chess still holds on a single board. The rules below only add to it.</p>
+		</section>
+
+		<section id="multiverse" class="mb-5">
+			<h3>Reading the multiverse</h3>
+			<p>Instead of one board you see a grid of boards. Every board is a snapshot of the game at one moment.</p>
+			<ul>
+				<li><strong>Columns are turns.</strong> Each time a player moves on a board, a new copy of that board appears to its right, showing the position after that move. Reading a row from left to right replays its history.</li>
+				<li><strong>Rows are timelines.</strong> The game starts with a single timeline, numbered 0. New timelines appear above and below it as the game goes on: the ones white creates get positive numbers, the ones black creates negative numbers.</li>
+				<li><strong>The border colour</strong> of a board shows whose move it is on that board.</li>
+				<li><strong>The highlighted column</strong> is the present; more on that <a href="#present" (click)="scrollTo($event, 'present')">below</a>.</li>
+			</ul>
+			<p>Curved arrows behind the boards show where each timeline branched off. Straight arrows show the moves that jumped between boards, and any threat to a royal piece. Squares tinted yellow or blue show where the last moves went.</p>
+		</section>
+
+		<section id="turns" class="mb-5">
+			<h3>Taking a turn</h3>
+			<p>Only the newest board of each timeline can be played on. A turn consists of one move on each of the boards you want to play, with at most one move per timeline:</p>
+			<ul>
+				<li>You <strong>must</strong> make the <a href="#present" (click)="scrollTo($event, 'present')">present</a> move on to your opponent before you can submit.</li>
+				<li>You <strong>may</strong> also move on other boards where it is your move, for example on a timeline that is ahead of the present.</li>
+			</ul>
+			<p>The usual way to hand over the present is to move on every board of yours that sits in it. It is not the only way, though: your moves themselves can shift the present. Travel back in time and branch off a new timeline, and the present jumps back to that new board, where it is your opponent's move. The boards you would otherwise have had to play on are then no longer in the present, so you are free to leave them alone. Keep an eye on the highlighted column while you plan your turn: Submit appears as soon as the present is no longer yours, provided none of your royal pieces is left in check.</p>
+			<p>Click a piece to see where it can go: the squares it can reach light up in green, on every board. Made a mistake? Use <i class="fas fa-undo"></i> <strong>Undo</strong>. When you are done, press <i class="fas fa-share"></i> <strong>Submit</strong> to hand the turn to your opponent.</p>
+		</section>
+
+		<section id="time-travel" class="mb-5">
+			<h3>Time travel and new timelines</h3>
+			<p>A piece may jump to another board, as long as it is a board where the same player is to move. What happens next depends on where it lands:</p>
+			<ul>
+				<li><strong>On the newest board of a timeline</strong>, the piece simply arrives there. Both the board it left and the board it arrived on move forward one step.</li>
+				<li><strong>On an older board</strong>, the past cannot be changed, so history splits instead. A new timeline branches off from that board, containing the piece that arrived. The original timeline carries on as if nothing happened, except that the piece has vanished from the board it left.</li>
+			</ul>
+			<p>Pieces can travel forward in time as well as back, but only to a board that already exists. The future is not played yet, so on its own timeline a piece can only look backwards. Timelines do not all keep the same pace, however: when another timeline is ahead of the one a piece stands on, its newest board lies in that piece's future, and the piece can jump forward onto it. Going forward in time therefore always means crossing timelines too, so only a piece that moves along the time and timeline axes at once can do it: a bishop can, a rook cannot.</p>
+		</section>
+
+		<section id="present" class="mb-5">
+			<h3>The present and active timelines</h3>
+			<p>The <strong>present</strong> is the earliest turn at which an active timeline is waiting for a move. Whoever is to move there must play on it, so the present keeps being pulled back to the timeline that lags behind. Travel far enough into the past and the present jumps back with you, which forces your opponent to answer there first.</p>
+			<p>A timeline is <strong>active</strong> unless its creator has branched too far ahead of the opponent: a player's timelines only count up to one more than the opponent has created. Any timeline beyond that stays on the board and can still be played on, but it does not hold the present back until the opponent branches as well. This stops a player from freezing the game by branching over and over.</p>
+		</section>
+
+		<section id="check" class="mb-5">
+			<h3>Check, checkmate and stalemate</h3>
+			<p>The king, and the royal queen in variants that have one, are <strong>royal</strong> pieces. A royal piece is in check when an enemy piece could capture it on its next turn, from any board, in any timeline and from any point in time.</p>
+			<p>You may not submit a turn that leaves any of your royal pieces in check. When you have no turn left that avoids this, it is <strong>checkmate</strong> and you lose. When you are not in check but still have no legal turn, it is <strong>stalemate</strong> and the game is a draw.</p>
+			<p>You can also give up at any time with <i class="far fa-flag"></i> <strong>Forfeit</strong>.</p>
+		</section>
+
+		<section id="axes" class="mb-5">
+			<h3>Moving in four dimensions</h3>
+			<p>Every square in the multiverse has four coordinates, and a piece can move along each of them:</p>
+			<div class="row mb-3">
+				<div class="col-6 col-md-3 mb-2"><div class="axis"><i class="fas fa-arrows-up-down"></i> <strong>Rank</strong><small>up and down the board</small></div></div>
+				<div class="col-6 col-md-3 mb-2"><div class="axis"><i class="fas fa-arrows-left-right"></i> <strong>File</strong><small>left and right on the board</small></div></div>
+				<div class="col-6 col-md-3 mb-2"><div class="axis"><i class="fas fa-clock-rotate-left"></i> <strong>Turn</strong><small>earlier in time; later only while also crossing timelines</small></div></div>
+				<div class="col-6 col-md-3 mb-2"><div class="axis"><i class="fas fa-code-branch"></i> <strong>Timeline</strong><small>to a parallel timeline</small></div></div>
+			</div>
+			<p>One step through time is a whole turn, so a piece always lands on a board where its own side is to move. Apart from that, the four axes are equal: a rook moves along any one of them, a bishop along any two at once, and so on. Each piece below comes with a map of a small corner of the multiverse, showing where a white piece in the middle of the present board could go if nothing were in its way. Rows are timelines and columns are turns, seen from white's side. The timelines in these maps all run level, so there are no future boards to jump to; where another timeline is ahead, moves that cross timelines can reach forward in time the same way they reach back:</p>
+			<div class="legend mb-3">
+				<span><span class="swatch mark-move"></span> can move or capture here</span>
+				<span><span class="swatch mark-quiet"></span> can only move here, not capture</span>
+				<span><span class="swatch mark-capture"></span> can only capture here</span>
+			</div>
+		</section>
+
+		<section id="pieces" class="mb-5">
+			<h3>The pieces</h3>
+			<p>The six pieces of normal chess.</p>
+			<ng-container *ngTemplateOutlet="pieceList; context: { $implicit: STANDARD }"></ng-container>
+
+			<h4 class="mt-5">Pieces in some variants</h4>
+			<p>Some variants swap in a few extra pieces. When a pawn promotes, it can become any of the pieces its side started the game with, apart from pawns, brawns and royal pieces.</p>
+			<ng-container *ngTemplateOutlet="pieceList; context: { $implicit: FAIRY }"></ng-container>
+		</section>
+
+		<div class="row mb-5">
+			<div class="col-12 col-sm-6 col-md-4 d-grid">
+				<a class="btn btn-outline-secondary btn-lg" routerLink="/" [queryParams]="carried"><i class="fas fa-arrow-left"></i> Main menu</a>
+			</div>
+		</div>
+	</div>
+</main>
+
+<ng-template #pieceList let-pieces>
+	@for (piece of pieces; track piece.type) {
+		<article class="piece-card">
+			<div class="piece-text">
+				<h5>
+					<svg class="icon" aria-hidden="true"><use [attr.href]="getPieceIcon(piece.type, BLACK, 0, 0)" /></svg>
+					{{piece.name}}
+				</h5>
+				<p class="lead">{{piece.summary}}</p>
+				@for (detail of piece.details; track $index) {
+					<p>{{detail}}</p>
+				}
+			</div>
+			<figure class="multiverse" [attr.aria-label]="'Where a ' + piece.name.toLowerCase() + ' can move'">
+				<div class="corner"></div>
+				@for (column of piece.diagram[0]; track column.t) {
+					<div class="turn-label">{{turnLabel(column.t)}}</div>
+				}
+				@for (line of piece.diagram; track $index) {
+					<div class="line-label">{{lineLabel(line[0].l)}}</div>
+					@for (board of line; track board.t) {
+						<div class="board" [ngClass]="{ home: board.home }">
+							@for (row of board.rows; track $index) {
+								<div>
+									@for (square of row; track $index) {
+										<div class="square" [ngClass]="square.mark">
+											@if (board.home && square.x == CENTRE && square.y == CENTRE) {
+												<svg class="piece"><use [attr.href]="getPieceIcon(piece.type, WHITE, square.x, square.y)" /></svg>
+											}
+										</div>
+									}
+								</div>
+							}
+						</div>
+					}
+				}
+				<figcaption>
+					<span><i class="fas fa-arrow-left"></i> past</span>
+					<span>present</span>
+				</figcaption>
+			</figure>
+		</article>
+	}
+</ng-template>

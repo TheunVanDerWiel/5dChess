@@ -2,18 +2,20 @@ import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GameService } from 'src/app/services/game-service';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LocalStorageService } from 'src/app/services/local-storage-service';
 import { Subscription } from 'rxjs';
 import { GameStatus, GameSummary } from 'src/app/types/Game';
 import { QrCode } from 'src/app/components/qr-code/qr-code';
 import { USER_ID_PARAM } from 'src/app/services/user-id';
+import { JOIN_PARAM } from 'src/app/services/join-link';
 
 @Component({
 	selector: 'app-home',
 	imports: [
 		CommonModule,
 		FormsModule,
+		RouterLink,
 		QrCode
 	],
 	templateUrl: './home.html',
@@ -103,10 +105,13 @@ export class Home implements OnInit, OnDestroy {
 	private gameService = inject(GameService);
 
 	ngOnInit(): void {
+		var invitation = Number(this.route.snapshot.queryParamMap.get(JOIN_PARAM));
+
 		// An id off a scanned code or a shared link speaks for whatever is stored here.
 		var shared = this.route.snapshot.queryParamMap.get(USER_ID_PARAM);
 		if (shared) {
 			this.saveUserId(shared);
+			this.accept(invitation);
 			return;
 		}
 
@@ -122,6 +127,18 @@ export class Home implements OnInit, OnDestroy {
 			this.userId = this.savedUserId = userId;
 			this.loadGames(userId);
 		}
+		this.accept(invitation);
+	}
+
+	/**
+	 * Joins the game a shared link invites to. The game opens even when joining is
+	 * refused, as it is for the player who sent the link: the game itself sends
+	 * anyone back here who turns out not to be playing in it.
+	 */
+	private accept(gameId: number) {
+		if (!this.userId || !Number.isInteger(gameId) || gameId <= 0) { return; }
+		var open = () => this.router.navigate(['/game', gameId], { queryParams: this.carried() });
+		this.subscriptions.add(this.gameService.join(gameId, this.userId).subscribe({ next: open, error: open }));
 	}
 
 	public saveUserId(userId: string) {

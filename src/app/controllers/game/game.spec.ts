@@ -291,6 +291,39 @@ describe('Game', () => {
 		expect(component.error).toBe('An error occurred. Refresh the page and try again.');
 	});
 
+	it('offers to share a game that is still waiting for an opponent', async () => {
+		game.Status = GameStatus.starting;
+		const opened: string[] = [];
+		const open = window.open;
+		window.open = ((url: string) => { opened.push(url); return null; }) as typeof window.open;
+		try {
+			component.ngOnInit();
+			fixture.detectChanges();
+			await settle();
+
+			const share = fixture.nativeElement.querySelector('[title="Share on WhatsApp"]') as HTMLButtonElement;
+			share.click();
+		} finally {
+			window.open = open;
+		}
+
+		expect(opened).toEqual(['https://wa.me/?text=' + encodeURIComponent(
+			'Join my 5D chess game via ' + document.baseURI.split(/[?#]/)[0] + '?join=3')]);
+	});
+
+	it('stops offering to share once the opponent has joined', async () => {
+		game.Status = GameStatus.starting;
+		component.ngOnInit();
+		fixture.detectChanges();
+		await settle();
+
+		notifications.updates.next(new GameUpdate([], GameStatus.in_progress, 1, null));
+		fixture.detectChanges();
+		await settle();
+
+		expect(fixture.nativeElement.querySelector('[title="Share on WhatsApp"]')).toBeNull();
+	});
+
 	it('never watches a game that was already over when it was opened', async () => {
 		game.Status = GameStatus.finished;
 		game.WinnerPlayer = 1;

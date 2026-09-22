@@ -15,19 +15,22 @@ import { promotes, promotionChoices } from 'src/app/engine/promotion';
 import { attacksOn, isAttacked, movableAfter } from 'src/app/engine/attacks';
 import { Verdict } from 'src/app/engine/checkmate';
 import { opponent } from 'src/app/engine/piece';
-import { pieceName, pieceSlug } from 'src/app/engine/piece';
-import { PieceSprite } from 'src/app/components/piece-sprite/piece-sprite';
+import { pieceName } from 'src/app/engine/piece';
+import { PieceSprite, getPieceIcon } from 'src/app/components/piece-sprite/piece-sprite';
 import { Arrow, BoardView, Origin, buildView } from './board-view';
 import { JudgeService } from 'src/app/services/judge-service';
 import { JudgeReply } from 'src/app/engine/judge.worker';
 import { USER_ID_PARAM } from 'src/app/services/user-id';
+import { joinUrl } from 'src/app/services/join-link';
+import { ShareOnWhatsapp } from 'src/app/directives/share-on-whatsapp';
 
 @Component({
 	selector: 'app-game',
 	imports: [
 		RouterLink,
 		CommonModule,
-		PieceSprite
+		PieceSprite,
+		ShareOnWhatsapp
 	],
 	templateUrl: './game.html',
 	styleUrl: './game.less',
@@ -132,13 +135,8 @@ export class Game implements OnInit, OnDestroy {
 		this.moveService.close();
 	}
 
-	/**
-	 * The sprite symbol a piece is drawn with. A piece is outlined when its colour
-	 * matches its square and filled otherwise, so it stays legible either way.
-	 */
 	public getPieceIcon(piece: Piece, x: number, y: number): string {
-		var variant = Piece.color(piece) == 1 - (x + y) % 2 ? 'outline' : 'solid';
-		return `#piece-${pieceSlug(piece)}-${variant}`;
+		return getPieceIcon(piece, x, y);
 	}
 
 	public getHighlight(square: Ref): string {
@@ -284,6 +282,15 @@ export class Game implements OnInit, OnDestroy {
 
 	public dismissError() {
 		this.error = null;
+	}
+
+	/** Whether the game still needs a second player, which is when inviting one helps. */
+	public isAwaitingOpponent(): boolean {
+		return this.game?.Status == GameStatus.starting;
+	}
+
+	public getJoinUrl(): string {
+		return this.game ? joinUrl(this.game.Id) : '';
 	}
 
 	public isOver(): boolean {

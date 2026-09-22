@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 import { Home } from './home';
 import { GameService } from 'src/app/services/game-service';
@@ -19,17 +19,25 @@ describe('Home', () => {
 	let component: Home;
 	let fixture: ComponentFixture<Home>;
 	let navigations: { commands: any[], extras: any }[];
+	let joined: number[];
+	/** Whether the server turns joining down, as it does for the game's own creator. */
+	let refuseJoin = false;
+	var joinStub = (gameId: number, userId: string) => {
+		joined.push(gameId);
+		return refuseJoin ? throwError(() => new Error('unauthorized')) : of(true);
+	};
 
 	/** Builds the page with a given query string and a given kind of browser. */
 	async function setUp(params: { [key: string]: string }, keeps = true) {
 		navigations = [];
+		joined = [];
 		await TestBed.configureTestingModule({
 			imports: [Home],
 			providers: [
 				provideRouter([]),
 				{ provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(params) } } },
 				{ provide: LocalStorageService, useValue: storageStub(keeps) },
-				{ provide: GameService, useValue: { getGames: () => of([]) } }
+				{ provide: GameService, useValue: { getGames: () => of([]), join: joinStub } }
 			]
 		}).compileComponents();
 
@@ -45,7 +53,10 @@ describe('Home', () => {
 		await fixture.whenStable();
 	}
 
-	afterEach(() => TestBed.resetTestingModule());
+	afterEach(() => {
+		refuseJoin = false;
+		TestBed.resetTestingModule();
+	});
 
 	it('should create', async () => {
 		await setUp({});
@@ -86,6 +97,23 @@ describe('Home', () => {
 		component.resume(7);
 		expect(navigations.at(-1)!.commands).toEqual(['/game', 7]);
 		expect(navigations.at(-1)!.extras.queryParams).toEqual({});
+	});
+
+	it('joins and opens the game a shared link invites to', async () => {
+		await setUp({ join: '42' });
+		expect(joined).toEqual([42]);
+		expect(navigations.at(-1)!.commands).toEqual(['/game', 42]);
+	});
+
+	it('opens the game anyway when joining is refused', async () => {
+		refuseJoin = true;
+		await setUp({ join: '42' });
+		expect(navigations.at(-1)!.commands).toEqual(['/game', 42]);
+	});
+
+	it('ignores an invitation that names no game', async () => {
+		await setUp({ join: 'nonsense' });
+		expect(joined).toEqual([]);
 	});
 
 	it('builds a crossplay link that carries the saved id', async () => {

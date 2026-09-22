@@ -45,6 +45,9 @@
 			<div class="col-12 col-sm-6 col-md-4 d-grid">
 				<button type="button" class="btn btn-outline-secondary" [ngClass]="{ active: mode === MODE_USERID }" (click)="mode = mode === MODE_USERID ? MODE_OVERVIEW : MODE_USERID"><i class="fas fa-random"></i> Crossplay</button>
 			</div>
+			<div class="col-12 col-sm-6 col-md-4 d-grid">
+				<a class="btn btn-outline-secondary" routerLink="/rules" [queryParams]="carried()"><i class="fas fa-book"></i> How to play</a>
+			</div>
 		</div>
 		
 		@if (mode === MODE_NEW) {
