@@ -1,4 +1,4 @@
-import { KNIGHT_OFFSETS, SLIDING, rulesFor, CaptureMode, Direction } from './geometry';
+import { CaptureMode, Direction, MoveRule, rulesFor } from './geometry';
 import { Color, EMPTY, Piece, opponent } from './piece';
 import { Ref, State, colorToMove, ref } from './state';
 
@@ -41,21 +41,54 @@ export function movableBy(state: State, color: Color): Perspective {
 }
 
 /**
- * The reading a player needs before moving. A board they are obliged to advance is
- * treated as though it already had been, so it counts as the opponent's to move:
- * that is what makes "you are in check" mean "do something about it this turn".
+ * The reading for a turn still being played: attacks the rest of the turn can do
+ * nothing about. A board awaiting the attacker can be neither moved on nor landed on
+ * by the defender, and moves never alter boards that already exist, so an attacker on
+ * such a head, its target and everything between them stay exactly as they are. All
+ * that can still change is the present, and `floor` is the earliest it could end up.
  */
-export function movableAfter(state: State, color: Color): Perspective {
-	const defender = opponent(color);
-	// Advancing those boards carries the present forward with them.
-	const present = state.present() + 1;
-	const pending = new Set(state.requiredLines(defender).map(l => `${l}:${state.headT(l)}`));
-	const about = (l: number, t: number) => pending.has(`${l}:${t}`);
-	const target = (l: number, t: number) => colorToMove(t) === color || about(l, t);
-	return {
-		target,
-		source: (l, t) => target(l, t) && t <= present && (state.isHead(l, t) || about(l, t))
-	};
+export function settledBy(state: State, color: Color, floor: number): Perspective {
+	const target = (l: number, t: number) => colorToMove(t) === color;
+	return { target, source: (l, t) => target(l, t) && t <= floor && state.isHead(l, t) };
+}
+
+/**
+ * The attacks a colour has to answer this turn: what the opponent could take if the
+ * colour passed. That makes "you are in check" mean "do something about it this turn".
+ *
+ * A pass carries every board the colour is obliged to move on forward unchanged, and
+ * this plays one out rather than pretending those boards already belong to the
+ * opponent. The difference is the half-move the pass adds: a piece travelling back
+ * in time from the new board arrives a half-move later than it would from the old
+ * one, on a board of the other colour, and that is often where the royal stands.
+ *
+ * Squares on the boards the pass created are reported on the boards they were copied
+ * from, which is where the pieces actually stand.
+ */
+export function threatsTo(state: State, defender: Color): Attack[] {
+	return passing(state, defender, passed => {
+		const back = (square: Ref) => passed.includes(square.l) && state.isHead(square.l, square.t)
+			? ref(square.l, square.t - 1, square.x, square.y)
+			: square;
+		return attacksOn(state, defender, movableBy(state, opponent(defender)))
+			.map(attack => ({ from: back(attack.from), to: back(attack.to), path: attack.path.map(back) }));
+	});
+}
+
+/** Whether the colour is in check: whether passing would leave a royal to be taken. */
+export function isInCheck(state: State, defender: Color): boolean {
+	return passing(state, defender, () => isAttacked(state, defender, movableBy(state, opponent(defender))));
+}
+
+/** Looks at the position as the colour would leave it by passing, then puts it back. */
+function passing<T>(state: State, color: Color, look: (passed: number[]) => T): T {
+	const passed = state.requiredLines(color);
+	passed.forEach(line => state.pushBoard(line));
+	try {
+		return look(passed);
+	} finally {
+		passed.forEach(line => state.popBoard(line));
+	}
 }
 
 /**
@@ -83,9 +116,8 @@ export function exposedRoyals(state: State, defender: Color, view: Perspective):
 }
 
 /**
- * Every way the defender's royals could be captured, found by casting rays out from
- * each royal and asking what sits at the far end. A missing board stops a ray exactly
- * as a piece does: a move cannot pass through a board that was never played.
+ * Every way the defender's royals could be captured. A missing board stops a ray
+ * exactly as a piece does: a move cannot pass through a board that was never played.
  */
 export function attacksOn(state: State, defender: Color, view: Perspective): Attack[] {
 	return collect(state, defender, view, false);
@@ -96,33 +128,46 @@ export function isAttacked(state: State, defender: Color, view: Perspective): bo
 	return collect(state, defender, view, true).length > 0;
 }
 
+/**
+ * Walks every capture the attacker could make and keeps the ones that land on a
+ * royal. This starts from the attackers rather than the royals because of where
+ * each can stand: a piece only sets out from the latest board of a timeline, so
+ * there are a handful of boards to look at, while a royal stands on every board of
+ * its own history and could be taken on any of them.
+ */
 function collect(state: State, defender: Color, view: Perspective, first: boolean): Attack[] {
 	const attacker = opponent(defender);
+	const size = state.size;
 	const found: Attack[] = [];
-	for (const royal of exposedRoyals(state, defender, view)) {
-		if (sliding(state, royal, attacker, view, found, first) && first) { return found; }
-		if (stepping(state, royal, attacker, view, found, first) && first) { return found; }
+	for (const line of state.timelines) {
+		const head = line.boards[line.boards.length - 1];
+		if (!view.source(line.index, head.t)) { continue; }
+		for (let x = 0; x < size; x++) {
+			for (let y = 0; y < size; y++) {
+				const piece = head.squares[x * size + y];
+				if (piece === EMPTY || Piece.color(piece) !== attacker) { continue; }
+				const from = ref(line.index, head.t, x, y);
+				if (strikes(state, from, piece, defender, view, found, first) && first) { return found; }
+			}
+		}
 	}
 	return found;
 }
 
 /**
- * Rays outward from the royal, one per direction, stopping at the first obstacle.
- * The walk is kept to plain numbers and only builds squares once it has found
- * something: a scan casts eighty rays per royal, and a royal appears on every board
- * of its own history, so anything allocated in here is allocated tens of thousands
- * of times over.
+ * Rays outward from one attacker, one per capturing direction, stopping at the first
+ * obstacle. The walk is kept to plain numbers and only builds squares once it has
+ * found something, since a scan runs at every step of a search.
  */
-function sliding(state: State, royal: Ref, attacker: Color, view: Perspective,
+function strikes(state: State, from: Ref, piece: number, defender: Color, view: Perspective,
 	found: Attack[], first: boolean): boolean {
 	const size = state.size;
 	let any = false;
-	for (let family = 0; family < SLIDING.length; family++) {
-		const directions = SLIDING[family];
-		for (let index = 0; index < directions.length; index++) {
-			const direction = directions[index];
-			let l = royal.l, t = royal.t, x = royal.x, y = royal.y;
-			for (let distance = 1; ; distance++) {
+	for (const rule of capturing(piece)) {
+		for (let index = 0; index < rule.directions.length; index++) {
+			const direction = rule.directions[index];
+			let l = from.l, t = from.t, x = from.x, y = from.y;
+			for (let distance = 1; rule.maxDistance === 0 || distance <= rule.maxDistance; distance++) {
 				if (direction[0] !== 0) {
 					// Only asked for when the ray moves across timelines, which most do not.
 					const next = state.offsetLine(l, direction[0]);
@@ -137,10 +182,9 @@ function sliding(state: State, royal: Ref, attacker: Color, view: Perspective,
 				if (board === null) { break; }
 				const occupant = board.squares[x * size + y];
 				if (occupant === EMPTY) { continue; }
-				if (Piece.color(occupant) === attacker
-					&& reaches(occupant, family, distance)
-					&& view.source(l, t)) {
-					found.push({ from: ref(l, t, x, y), to: royal, path: trail(state, royal, direction, distance) });
+				if (Piece.color(occupant) === defender && Piece.isRoyal(occupant) && view.target(l, t)) {
+					const royal = ref(l, t, x, y);
+					found.push({ from, to: royal, path: trail(state, royal, direction, distance) });
 					any = true;
 					if (first) { return true; }
 				}
@@ -151,56 +195,16 @@ function sliding(state: State, royal: Ref, attacker: Color, view: Perspective,
 	return any;
 }
 
-/** The empty squares a ray crossed before it hit something. */
+/** The empty squares a ray crossed before it hit something, counted from the royal. */
 function trail(state: State, royal: Ref, direction: Direction, distance: number): Ref[] {
+	const back: Direction = [-direction[0], -direction[1], -direction[2], -direction[3]];
 	const path: Ref[] = [];
 	for (let step = 1; step < distance; step++) {
-		const square = along(state, royal, direction, step);
+		const square = along(state, royal, back, step);
 		// The ray already reached the far end, so every square along it exists.
 		if (square !== null) { path.push(square); }
 	}
 	return path;
-}
-
-/** Knights, pawns and brawns, which arrive in one bound rather than along a ray. */
-function stepping(state: State, royal: Ref, attacker: Color, view: Perspective,
-	found: Attack[], first: boolean): boolean {
-	let any = false;
-
-	for (let index = 0; index < KNIGHT_OFFSETS.length; index++) {
-		const offset = KNIGHT_OFFSETS[index];
-		const l = state.offsetLine(royal.l, offset[0]);
-		if (l === null) { continue; }
-		const t = royal.t + offset[1];
-		const x = royal.x + offset[2], y = royal.y + offset[3];
-		const occupant = at(state, l, t, x, y);
-		if (occupant !== EMPTY
-			&& Piece.color(occupant) === attacker
-			&& Piece.type(occupant) === Piece.black_knight
-			&& view.source(l, t)) {
-			found.push({ from: ref(l, t, x, y), to: royal, path: [] });
-			any = true;
-			if (first) { return true; }
-		}
-	}
-
-	// A pawn's captures are not symmetric, so its ray is walked backwards: the square
-	// an enemy pawn would have to stand on to take this royal.
-	for (const type of [Piece.black_pawn, Piece.black_brawn]) {
-		const piece = Piece.of(type, attacker);
-		for (const direction of captures(piece)) {
-			const l = state.offsetLine(royal.l, -direction[0]);
-			if (l === null) { continue; }
-			const t = royal.t - direction[1];
-			const x = royal.x - direction[2], y = royal.y - direction[3];
-			if (at(state, l, t, x, y) === piece && view.source(l, t)) {
-				found.push({ from: ref(l, t, x, y), to: royal, path: [] });
-				any = true;
-				if (first) { return true; }
-			}
-		}
-	}
-	return any;
 }
 
 function along(state: State, from: Ref, direction: Direction, distance: number): Ref | null {
@@ -213,39 +217,14 @@ function along(state: State, from: Ref, direction: Direction, distance: number):
 		from.y + direction[3] * distance);
 }
 
-function at(state: State, l: number, t: number, x: number, y: number): number {
-	if (x < 0 || x >= state.size || y < 0 || y >= state.size) { return EMPTY; }
-	const board = state.board(l, t);
-	if (board === null) { return EMPTY; }
-	return board.squares[x * state.size + y];
-}
+/** The rules a piece can capture by, worked out once per piece. */
+const captureRules = new Map<number, MoveRule[]>();
 
-/** How far a piece slides in each family of directions, worked out once per type. */
-const reach = new Map<number, number[]>();
-
-function reaches(piece: number, family: number, distance: number): boolean {
-	const type = Piece.type(piece);
-	let table = reach.get(type);
-	if (table === undefined) {
-		const rules = rulesFor(piece);
-		table = SLIDING.map(directions => {
-			const rule = rules.find(candidate => candidate.directions === directions);
-			return rule === undefined ? -1 : rule.maxDistance;
-		});
-		reach.set(type, table);
+function capturing(piece: number): MoveRule[] {
+	let rules = captureRules.get(piece);
+	if (rules === undefined) {
+		rules = rulesFor(piece).filter(rule => rule.capture !== CaptureMode.never);
+		captureRules.set(piece, rules);
 	}
-	const limit = table[family];
-	return limit === 0 || (limit > 0 && distance <= limit);
-}
-
-const captureCache = new Map<number, readonly Direction[]>();
-
-function captures(piece: number): readonly Direction[] {
-	let directions = captureCache.get(piece);
-	if (directions === undefined) {
-		const rule = rulesFor(piece).find(candidate => candidate.capture === CaptureMode.only);
-		directions = rule === undefined ? [] : rule.directions;
-		captureCache.set(piece, directions);
-	}
-	return directions;
+	return rules;
 }

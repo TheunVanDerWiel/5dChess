@@ -2,8 +2,7 @@ import { Attack, attacksOn, movableBy } from './attacks';
 import { Move } from './movegen';
 import { Color, opponent } from './piece';
 import { State } from './state';
-import { Color as Side } from './piece';
-import { DEFAULT_BUDGET, Limits, findLegalTurn } from './search';
+import { DEFAULT_BUDGET, Limits, canActivateTimeline, findLegalTurn } from './search';
 
 export enum Verdict {
 	/** The colour has a turn it can legally play. */
@@ -60,22 +59,6 @@ export function unanswerableAttacks(state: State, color: Color): Attack[] {
 	// A branch can begin no earlier than one half-move after the earliest board there
 	// is, so if even that would not strand the nearest attacker, nothing will.
 	return earliest + 1 >= lowest ? attacks : [];
-}
-
-/**
- * Whether a timeline the colour started would be an active one. Only active
- * timelines are counted when working out the present, so only these can drag it
- * back; once a player's spare is spent, branching no longer changes the present.
- */
-export function canActivateTimeline(state: State, color: Color): boolean {
-	const index = color === Side.white ? state.maxIndex + 1 : state.minIndex - 1;
-	let positive = index > 0 ? 1 : 0;
-	let negative = index < 0 ? 1 : 0;
-	for (const line of state.timelines) {
-		if (line.index > 0) { positive++; }
-		if (line.index < 0) { negative++; }
-	}
-	return Math.abs(index) <= Math.min(positive, negative) + 1;
 }
 
 /**

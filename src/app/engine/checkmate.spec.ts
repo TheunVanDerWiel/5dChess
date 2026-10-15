@@ -2,6 +2,11 @@ import { Verdict, judge, unanswerableAttacks } from './checkmate';
 import { Color, EMPTY, Piece } from './piece';
 import { State, Timeline, ref } from './state';
 import { applyTurn } from './turn';
+import { isInCheck } from './attacks';
+import { moveFromDto, stateFromDto } from './dto';
+import { GameState } from 'src/app/types/GameState';
+import { BoardMove } from 'src/app/types/Move';
+import pastCheck from '../../../testcases/1.json';
 
 function boards(size: number, lines: { index: number, count: number }[]): State {
 	return new State(size, lines.map(line => {
@@ -107,5 +112,36 @@ describe('attacks no turn could ever answer', () => {
 		// A rook in the line of fire on that same board: now nothing gets through.
 		state.set(ref(0, 1, 4, 4), Piece.white_rook);
 		expect(judge(state, Color.white).verdict).toBe(Verdict.playable);
+	});
+});
+
+describe('a mate that only shows once the turn is finished', () => {
+	/**
+	 * Black has to move on four timelines, and every move on timeline 1 lets the common
+	 * king on the board it creates take the black king two half-moves back on timeline
+	 * 2, where nothing can be done about it. Black has used up its spare timeline, so no
+	 * move into the past drags the present back either.
+	 */
+	function finished(): State {
+		const state = stateFromDto(pastCheck.StartingState as unknown as GameState);
+		for (const turn of pastCheck.Moves) {
+			applyTurn(state, (turn.Pieces as BoardMove[]).map(moveFromDto));
+		}
+		return state;
+	}
+
+	it('is mate', () => {
+		expect(judge(finished(), Color.black).verdict).toBe(Verdict.trapped);
+	});
+
+	it('is mate rather than stalemate, because black is already in check', () => {
+		// Passing would carry the common king onto 1T18, one step from the king on 2T16.
+		expect(isInCheck(finished(), Color.black)).toBe(true);
+	});
+
+	it('is seen without trying the other timelines\' moves against each other', () => {
+		// Each of the other three timelines has around fifty to ninety moves, so any
+		// search that combines them first runs into the hundreds of thousands.
+		expect(judge(finished(), Color.black).nodes).toBeLessThan(1000);
 	});
 });

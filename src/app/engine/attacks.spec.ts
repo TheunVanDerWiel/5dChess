@@ -1,4 +1,4 @@
-import { attacksOn, exposedRoyals, isAttacked, movableAfter, movableBy } from './attacks';
+import { attacksOn, exposedRoyals, isAttacked, isInCheck, movableBy, threatsTo } from './attacks';
 import { Color, EMPTY, Piece } from './piece';
 import { State, Timeline, ref } from './state';
 import { stateFromDto } from './dto';
@@ -183,6 +183,27 @@ describe('the warning a player gets before moving', () => {
 		// As it stands the rook cannot move: t = 0 is white's to play.
 		expect(isAttacked(state, Color.white, movableBy(state, Color.black))).toBe(false);
 		// But white has to advance this board, and then the rook takes the king.
-		expect(isAttacked(state, Color.white, movableAfter(state, Color.black))).toBe(true);
+		expect(isInCheck(state, Color.white)).toBe(true);
+	});
+
+	it('counts a threat from the board the pass would create, back through time', () => {
+		const state = oneLine(8, 3);
+		// White is to move at t = 2. Passing copies the rook onto t = 3, and one step
+		// back in time from there is t = 1, where the king stands. From t = 2 itself,
+		// one step back would only reach t = 0.
+		state.set(ref(0, 1, 4, 4), Piece.white_king);
+		state.set(ref(0, 2, 4, 4), Piece.black_rook);
+		expect(isInCheck(state, Color.white)).toBe(true);
+	});
+
+	it('names the squares the pieces stand on now', () => {
+		const state = oneLine(8, 3);
+		state.set(ref(0, 1, 4, 4), Piece.white_king);
+		state.set(ref(0, 2, 4, 4), Piece.black_rook);
+		const threats = threatsTo(state, Color.white);
+		expect(threats.map(threat => threat.from)).toEqual([ref(0, 2, 4, 4)]);
+		expect(threats[0].to).toEqual(ref(0, 1, 4, 4));
+		// Looking leaves no trace on the position.
+		expect(state.headT(0)).toBe(2);
 	});
 });

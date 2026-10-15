@@ -12,7 +12,7 @@ import { Move as EngineMove, targets } from 'src/app/engine/movegen';
 import { AppliedMove, applyMove, applyTurn, isTurnComplete, undoMove, undoTurn } from 'src/app/engine/turn';
 import { moveFromDto, moveToDto, stateFromDto } from 'src/app/engine/dto';
 import { promotes, promotionChoices } from 'src/app/engine/promotion';
-import { attacksOn, isAttacked, movableAfter } from 'src/app/engine/attacks';
+import { isInCheck, threatsTo } from 'src/app/engine/attacks';
 import { Verdict } from 'src/app/engine/checkmate';
 import { opponent } from 'src/app/engine/piece';
 import { pieceName } from 'src/app/engine/piece';
@@ -222,7 +222,7 @@ export class Game implements OnInit, OnDestroy {
 	public isMoveComplete(): boolean {
 		if (!this.state) { return false; }
 		var me = this.getUserColor();
-		return isTurnComplete(this.state, me) && !isAttacked(this.state, me, movableAfter(this.state, opponent(me)));
+		return isTurnComplete(this.state, me) && !isInCheck(this.state, me);
 	}
 
 	public confirm() {
@@ -570,7 +570,7 @@ export class Game implements OnInit, OnDestroy {
 		// last move played.
 		if (this.isPlayerTurn() || this.isOver()) {
 			var defender = this.sideToMove();
-			for (const attack of attacksOn(this.state, defender, movableAfter(this.state, opponent(defender)))) {
+			for (const attack of threatsTo(this.state, defender)) {
 				add(attack.from, attack.to, 'threat');
 			}
 		}
@@ -617,7 +617,7 @@ export class Game implements OnInit, OnDestroy {
 
 		this.searching = false;
 		var me = this.getUserColor();
-		this.inCheck = isAttacked(this.state, me, movableAfter(this.state, opponent(me)));
+		this.inCheck = isInCheck(this.state, me);
 		// Whether a turn exists at all is handed to the worker, which keeps at it for
 		// as long as it takes rather than giving up and leaving the game in limbo.
 		this.judgingAt = this.game.Moves.length;
